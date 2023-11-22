@@ -1,0 +1,285 @@
+---
+title: "Untitled"
+author: "Jane Fudyma"
+date: "2023-10-08"
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+library(cowplot)
+
+#PCoA
+library(vegan)
+library(ape)
+
+#PERMANOVA
+library(pairwiseAdonis)
+
+#venndiagram
+library(ggvenn)
+```
+
+
+```{r}
+#set color pallettes 
+set.buffer.chem <- c('azure4', '#F99B45', '#63AAC0', '#D95980')
+set.buffer.chem.bioreps <- c('aliceblue','lavenderblush3', 'bisque')
+set.pH.bioreps <- c('azure3','darkslategray', 'darksalmon')
+```
+
+
+----DATA PARTITION -----------------------------
+```{r}
+#otu table
+deta <- read.csv("../data/2309_normalizedabundancetable_90percentreadidentity.csv", row.names = 1)
+
+bio.otu <- deta %>% select(CB_BR1:SM_BR3) %>% filter(rowSums(across(where(is.numeric)))!=0) 
+tech.otu <- deta %>% select(CB_TR1:SM_TR4) %>% filter(rowSums(across(where(is.numeric)))!=0) 
+
+#metadata table
+meta <- read.csv("../data/230321_SampleMeta.csv")
+
+bio.m <- meta[meta$Type == 'BR', ]
+tech.m <- meta[meta$Type == 'TR', ]
+```
+
+
+--------PCoA-------------------------------------------------------------------
+
+TechREPS
+```{r}
+otu <- t(tech.otu)
+otu.xform <- decostand(otu, method="hellinger")
+otu.dist.tech <- as.matrix(vegdist(otu.xform, method='bray')) 
+str(otu.dist.tech)
+otu.nmds <- metaMDS(otu.dist.tech)
+otu.nmds$stress
+pcoa <- pcoa(as.dist(otu.dist.tech))
+axes <- as.data.frame(pcoa$vectors)
+eigval <- round(pcoa$values$Relative_eig * 100, digits = 2)
+eigval <- data.frame( PC = 1:length(eigval), Eigval = eigval)
+
+
+pco1.tech <- paste("PCo1 (", eigval[[1,2]], " %)", sep = "")
+pco2.tech <- paste("PCo2 (", eigval[[2,2]], " %)", sep = "")
+
+axes.tech <- cbind(axes,tech.m) #add meta data to axes table 
+```
+
+VENN DIAGRAM
+
+```{r}
+#rarefied data
+df <- read.table("../data/2309_normalizedabundancetable_rarefied_buffchem", sep=",", header=T, row.names=1)
+df <- df %>% mutate_if(is.numeric, ~1 * (. > 0)) 
+
+#select votus that are present in every sample
+df$CB <- with(df, ifelse(CB_TR1 == 1 & CB_TR2 == 1 & CB_TR3 == 1 & CB_TR4 == 1, 1, 0))
+df$GL <- with(df, ifelse(GL_TR1 == 1 & GL_TR2 == 1 & GL_TR3 == 1 & GL_TR4 == 1, 1, 0))
+df$PB <- with(df, ifelse(PB_TR1 == 1 & PB_TR2 == 1 & PB_TR3 == 1 & PB_TR4 == 1, 1, 0))
+df$SM <- with(df, ifelse(SM_TR1 == 1 & SM_TR2 == 1 & SM_TR3 == 1 & SM_TR4 == 1, 1, 0))
+
+df1 <- df %>% select(CB:SM)
+
+df1$CB[df1$CB > 0] <- (rownames(df1)[df1$CB > 0])
+df1$GL[df1$GL > 0] <- (rownames(df1)[df1$GL > 0])
+df1$PB[df1$PB > 0] <- (rownames(df1)[df1$PB > 0])
+df1$SM[df1$SM > 0] <- (rownames(df1)[df1$SM > 0])
+
+listformat <- list(CB=df1$CB,
+              GL=df1$GL,
+              PB=df1$PB,
+              SM=df1$SM
+          )
+
+#legend_grob <- get_legend(pcoa.tech)
+
+(vent <- ggvenn(listformat, fill_color = set.buffer.chem, stroke_size = 0.5, text_size = 4.5, set_name_size = 0, show_percentage = FALSE ))
+```
+
+
+BIOREPS
+```{r}
+otu <- t(bio.otu)
+otu.xform <- decostand(otu, method="hellinger")
+otu.dist.bio <- as.matrix(vegdist(otu.xform, method='bray')) 
+str(otu.dist.bio)
+otu.nmds <- metaMDS(otu.dist.bio)
+otu.nmds$stress
+pcoa <- pcoa(as.dist(otu.dist.bio))
+axes <- as.data.frame(pcoa$vectors)
+axes
+eigval <- round(pcoa$values$Relative_eig * 100, digits = 2)
+eigval <- data.frame( PC = 1:length(eigval), Eigval = eigval)
+
+eigval[[1,2]] # see first axes percentage
+eigval[[2,2]] # second axes
+eigval[[3,2]] # third axes
+eigval[[4,2]] # fourth axes
+
+#define the axes for the plot - adjust if plotting dimensions other than 1 and 2
+pco1.bio <- paste("PCo1 (", eigval[[1,2]], " %)", sep = "")
+pco2.bio <- paste("PCo2 (", eigval[[2,2]], " %)", sep = "")
+pco3.bio <- paste("PCo3 (", eigval[[3,2]], " %)", sep = "")
+
+#looked to see that axes and sampleID orders matched visually
+axes.bio <- cbind(axes,bio.m)
+```
+
+```{r}
+#rarefied data
+df <- read.table("../data/2309_normalizedabundancetable_rarefied_buffchem", sep=",", header=T, row.names=1)
+df <- df %>% mutate_if(is.numeric, ~1 * (. > 0)) 
+
+#select votus that are present in every sample
+df$CB <- with(df, ifelse(CB_BR1 == 1 & CB_BR2 == 1 & CB_BR3 == 1, 1, 0))
+df$GL <- with(df, ifelse(GL_BR1 == 1 & GL_BR2 == 1 & GL_BR3 == 1, 1, 0 ))
+df$PB <- with(df, ifelse(PB_BR1 == 1 & PB_BR2 == 1 & PB_BR3 == 1, 1, 0 ))
+df$SM <- with(df, ifelse(SM_BR1 == 1 & SM_BR2 == 1 & SM_BR3 == 1, 1, 0 ))
+
+df1 <- df %>% select(CB:SM)
+
+df1$CB[df1$CB > 0] <- (rownames(df1)[df1$CB > 0])
+df1$GL[df1$GL > 0] <- (rownames(df1)[df1$GL > 0])
+df1$PB[df1$PB > 0] <- (rownames(df1)[df1$PB > 0])
+df1$SM[df1$SM > 0] <- (rownames(df1)[df1$SM > 0])
+
+listformat <- list(CB=df1$CB,
+              GL=df1$GL,
+              PB=df1$PB,
+              SM=df1$SM
+          )
+
+#legend_grob <- get_legend(pcoa.tech)
+
+(vent2 <- ggvenn(listformat, fill_color = set.buffer.chem, stroke_size = 0.5, text_size = 4.5, set_name_size = 0, show_percentage = FALSE ))
+
+
+#select votus that are present in every sample
+df$BR1 <- with(df, ifelse(CB_BR1 == 1 & GL_BR1 == 1 & PB_BR1 == 1 & SM_BR1 == 1, 1, 0))
+df$BR2 <- with(df, ifelse(CB_BR2 == 1 & GL_BR2 == 1 & PB_BR2 == 1 & SM_BR2 == 1, 1, 0))
+df$BR3 <- with(df, ifelse(CB_BR3 == 1 & GL_BR3 == 1 & PB_BR3 == 1 & SM_BR3 == 1, 1, 0))
+
+df1 <- df %>% select(BR1:BR3)
+
+df1$BR1[df1$BR1 > 0] <- (rownames(df1)[df1$BR1 > 0])
+df1$BR2[df1$BR2 > 0] <- (rownames(df1)[df1$BR2 > 0])
+df1$BR3[df1$BR3 > 0] <- (rownames(df1)[df1$BR3 > 0])
+
+listformat <- list(BR1=df1$BR1,
+              BR2=df1$BR2,
+              BR3=df1$BR3
+          )
+
+(vent3 <- ggvenn(listformat, fill_color = set.buffer.chem.bioreps, stroke_size = 0.5, text_size = 4.5, set_name_size = 0, show_percentage = FALSE ))
+```
+
+```{r}
+df.bio <- read.csv('../data/2309_allpH_90percentreadidentity_normalized.csv')  %>% column_to_rownames(var='X') %>% select(AN_BR1_4:ML_BR3_8)
+df.bio <-  df.bio %>% mutate_if(is.numeric, ~ ifelse(. > 0, 1, 0))
+
+df.bio$bb.br1 <- with(df.bio, ifelse(BB_BR1_4 == 1 & BB_BR1_5 == 1 & BB_BR1_6 == 1 & BB_BR1_8 == 1, 1, 0))
+df.bio$bb.br2 <- with(df.bio, ifelse(BB_BR2_4 == 1 & BB_BR2_5 == 1 & BB_BR2_6 == 1 & BB_BR2_8 == 1, 1, 0))
+df.bio$bb.br3 <- with(df.bio, ifelse(BB_BR3_4 == 1 & BB_BR3_5 == 1 & BB_BR3_6 == 1 & BB_BR3_8 == 1, 1, 0))
+
+df.bod <- df.bio %>% select(bb.br1:bb.br3)
+
+df.bod$bb.br1[df.bod$bb.br1 > 0] <- (rownames(df.bod)[df.bod$bb.br1 > 0])
+df.bod$bb.br2[df.bod$bb.br2 > 0] <- (rownames(df.bod)[df.bod$bb.br2 > 0])
+df.bod$bb.br3[df.bod$bb.br3 > 0] <- (rownames(df.bod)[df.bod$bb.br3 > 0])
+
+
+list.bod <- list(BR1=df.bod$bb.br1, BR2=df.bod$bb.br2, BR3=df.bod$bb.br3)
+
+(vent.bod.bioreps <- ggvenn(list.bod, fill_color = set.pH.bioreps, stroke_size = 0.5, text_size = 4.5, set_name_size = 0, show_percentage = FALSE ) + theme(plot.title = element_text(hjust = 0.5)))
+```
+
+```{r}
+pcoa.tech <-  ggplot(mapping = aes(x, y)) +
+  geom_point(data=axes.tech, aes(x=Axis.1, y=Axis.2, fill=Buffer), colour = 'black', pch=21,  
+  size=6, 
+             show.legend = TRUE) +
+  labs(title = '',x= pco1.tech, y=pco2.tech) + theme_minimal() +
+  scale_fill_manual(values=set.buffer.chem, name = 'Buffer         ') +
+  #scale_shape_discrete(labels=c("4.5","5.5", "6.5", "7.5")) +
+  theme_linedraw(base_size = 16) +
+  facet_wrap(~Type, labeller = labeller(Type = c("TR" = "Technical Replicates"))) +
+  theme( legend.text = element_text(size =10), legend.title = element_text(size=10, face = 'bold'),
+         axis.title.x = element_text(size=10, face = 'bold'), axis.title.y = element_text(size=10, face = 'bold'),
+         plot.title = element_text(size=10), legend.position = 'right', 
+         legend.box="vertical", panel.grid.major = element_line(color = "gray70"),
+    panel.grid.minor = element_line(color = "gray70"))
+pcoa.tech
+
+pcoa.bio <-  ggplot(mapping = aes(x, y)) +
+  geom_point(data=axes.bio, aes(x=Axis.1, y=Axis.2, fill=Rep), colour = 'black', pch=21, 
+             size=6, 
+             show.legend = TRUE) +
+  labs(title = '', x= pco1.bio, y=pco2.bio) + theme_minimal() +
+  scale_fill_manual(values=c(set.buffer.chem.bioreps), name = 'Rep (Chem)') + #slateblue
+  #scale_shape_discrete(labels=c("4.5","5.5", "6.5", "7.5")) +
+  theme_linedraw(base_size = 16) +
+  facet_wrap(~Type, labeller = labeller(Type = c("BR" = "Biological Replicates"))) +
+  theme( legend.text = element_text(size =10), legend.title = element_text(size=10, face = 'bold'),
+         axis.title.x = element_text(size=10, face = 'bold'), axis.title.y = element_text(size=10, face = 'bold'),
+         plot.title = element_text(size=10), legend.position = 'right', 
+         legend.box="vertical", panel.grid.major = element_line(color = "gray70"),
+    panel.grid.minor = element_line(color = "gray70"))
+pcoa.bio
+#ggsave('PCoA_BioReps_Axis1-2.png', pcoa.bio, dpi = 300, width = 6, height =5)
+
+pcoa.bio.2 <-  ggplot(mapping = aes(x, y)) +
+  geom_point(data=axes.bio, aes(x=Axis.2, y=Axis.3,fill=Buffer), colour = 'black', pch=21, 
+             size=6, 
+             show.legend = TRUE) +
+  labs(title = '', x= pco2.bio, y=pco3.bio) + theme_minimal() +
+  scale_fill_manual(values=c(set.buffer.chem)) + #values=met.brewer("Hokusai3", 6)
+  scale_shape_discrete(name = 'Biological Replicate') +
+  #scale_shape_discrete(labels=c("4.5","5.5", "6.5", "7.5")) +
+  facet_wrap(~Type, labeller = labeller(Type = c("BR" = "Biological Replicates"))) +
+  theme_linedraw(base_size = 16) +
+  theme( legend.text = element_text(size =10), legend.title = element_text(size=10, face = 'bold'),
+         axis.title.x = element_text(size=10, face = 'bold'), axis.title.y = element_text(size=10, face = 'bold'),
+         plot.title = element_text(size=10), legend.position = 'right', 
+         legend.box="vertical", panel.grid.major = element_line(color = "gray70"),
+    panel.grid.minor = element_line(color = "gray70"))
+pcoa.bio.2
+
+
+forlegend <-  ggplot(mapping = aes(x, y)) +
+  geom_point(data=axes.bio, aes(x=Axis.1, y=Axis.2, fill=Rep), colour = 'black', pch=21, 
+             size=6, 
+             show.legend = TRUE) +
+  scale_fill_manual(values=c(set.pH.bioreps), name = 'Rep (pH)    ') + theme_minimal() + theme( legend.text = element_text(size =10), legend.title = element_text(size=10, face = 'bold'))
+forlegend
+```
+
+
+```{r}
+
+legend1 <- get_legend(pcoa.tech)
+legend2 <- get_legend(pcoa.bio)
+legend3 <- get_legend(forlegend)
+
+
+(legends <- plot_grid(legend1, NULL, legend2, NULL, legend3, ncol=1, rel_heights = c(1, -0.65, 1, -0.67, 1)))
+
+p1 <- pcoa.tech + theme(legend.position = "none")
+p2 <- pcoa.bio + theme(legend.position = "none")
+p4 <- pcoa.bio.2  + theme(legend.position = "none") 
+
+(top <- plot_grid(p1, p2, p4, labels = c("A", "B", "C"), label_size = 18, ncol = 3))
+(bot <- plot_grid(NULL,vent, vent3, vent.bod.bioreps, labels = c("","D", "E", "F"), rel_widths = c(0.3, 1,1,1), label_size = 18, nrow = 1))
+
+(all <- plot_grid(top, bot, ncol=1, rel_heights = c(2.5, 1.75)))
+
+(all7 <- plot_grid(all, NULL, legends, NULL, nrow = 1, rel_widths = c(2, -.2, .6, -.2)) + theme(
+    plot.background = element_rect(fill = "white", color = 'white')))
+
+ggsave('Fig4_BuffChem_BioRepVennComparison.png', all7, dpi = 300, height = 7, width = 10)
+```
+
+
+
+
