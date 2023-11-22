@@ -1,0 +1,253 @@
+---
+title: "pH DNA yields"
+author: "Jane Fudyma"
+date: "2023-07-14"
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+library(cowplot)
+library(multcompView)
+library(ggpubr)
+```
+
+
+```{r}
+df <- read_csv('../data/2307.DNAyeilds.csv')
+dftech <- df %>% filter(Rep == 'TR')
+dfbio <- df %>% filter(Rep == 'BR')
+
+dftech.a <- dftech %>% filter(Site == 'AN')
+dftech.a$pH <- as.factor(dftech.a$pH)
+dftech.b <- dftech %>% filter(Site == 'BB')
+dftech.b$pH <- as.factor(dftech.b$pH)
+dftech.m <- dftech %>% filter(Site == 'ML')
+dftech.m$pH <- as.factor(dftech.m$pH)
+
+dfbio.a <- dfbio %>% filter(Site == 'AN')
+dfbio.a$pH <- as.factor(dfbio.a$pH)
+dfbio.b <- dfbio %>% filter(Site == 'BB')
+dfbio.b$pH <- as.factor(dfbio.b$pH)
+dfbio.m <- dfbio %>% filter(Site == 'ML')
+dfbio.m$pH <- as.factor(dfbio.m$pH)
+```
+
+```{r}
+#tech reps - all normally distributed
+shapiro.test(dftech.a$Yield) 
+ggdensity(dftech.a$Yield)
+shapiro.test(dftech.m$Yield) 
+ggdensity(dftech.m$Yield)
+shapiro.test(dftech.b$Yield) 
+ggdensity(dftech.b$Yield)
+
+#bioreps - normal besides wetland which is right skewed
+
+shapiro.test(dfbio.a$Yield) 
+ggdensity(dfbio.a$Yield)
+shapiro.test(dfbio.m$Yield) 
+ggdensity(dfbio.m$Yield)
+shapiro.test(dfbio.b$Yield) 
+ggdensity(dfbio.b$Yield)
+
+dfbio.b$Yield.tform <- log(dfbio.b$Yield) #log transform right skewed data
+shapiro.test(dfbio.b$Yield.tform) 
+ggdensity(dfbio.b$Yield.tform)
+```
+
+
+```{r}
+#forest
+an.tech.mod <- lm(Yield ~ pH, dftech.a)
+an.tech.aov <- aov(an.tech.mod)
+summary(an.tech.aov) #significant (0.0248)
+pairs(emmeans(an.tech.mod, ~pH)) #4 vs 8 is significant
+
+
+(yieldplots.ang <- dftech.a %>% 
+  ggplot(aes(as.factor(pH), Yield)) +
+  geom_line(data = . %>% group_by(Site, pH) %>% summarise(Mean = mean(Yield)), aes(y = Mean, group = Site), color = "gray", size = 1) +
+  geom_point(aes(fill = as.factor(pH)), pch = 21, alpha = 0.9, size = 3, col = 'black') +
+  labs(x ="pH", y= NULL)  +
+  theme_linedraw() +
+  scale_fill_manual(values = c('goldenrod1','darkolivegreen3','chartreuse4', 'darkcyan'))  + 
+  scale_x_discrete(labels=c("4" = "4.5", "5" = "5.5",
+                              "6" = "6.5", "8" = "7.5")) +
+  theme(text = element_text(size = 15),
+        legend.position = "none", panel.grid.major = element_line(color = "gray80"),
+    panel.grid.minor = element_line(color = "gray80")) + scale_y_continuous(labels = function(x) sprintf("%.2f", x)) + 
+  facet_wrap(~Site, labeller = labeller(Site = c("AN" = "Forest")) ))
+
+(yieldplots.ang.2 <- yieldplots.ang + geom_line(data=tibble(x=c(1,4), y = c(2.6,2.6)), aes (x=x, y=y), inherit.aes = FALSE) + 
+  geom_text(data=tibble(x=2.5, y = c(2.7)), aes (x=x, y=y,  label = '*', size = 4), inherit.aes = FALSE))
+
+#wetland
+bb.tech.mod <- lm(Yield ~ pH, dftech.b)
+bb.tech.aov <- aov(bb.tech.mod)
+summary(bb.tech.aov) #not significant
+
+
+(yieldplots.bod <- dftech.b %>% 
+  ggplot(aes(as.factor(pH), Yield)) +
+  geom_line(data = . %>% group_by(Site, pH) %>% summarise(Mean = mean(Yield)), aes(y = Mean, group = Site), color = "gray", size = 1) +
+  geom_point(aes(fill = as.factor(pH)), pch = 21, alpha = 0.9, size = 3, col = 'black') +
+  labs(x =" ", y= NULL)  +
+  theme_linedraw() +
+  scale_fill_manual(values = c('goldenrod1','darkolivegreen3','chartreuse4', 'darkcyan'))  + 
+  scale_x_discrete(labels=c("4" = "4.5", "5" = "5.5",
+                              "6" = "6.5", "8" = "7.5")) +
+  theme(text = element_text(size = 15),
+        legend.position = "none", panel.grid.major = element_line(color = "gray80"),
+    panel.grid.minor = element_line(color = "gray80")) + scale_y_continuous(labels = function(x) sprintf("%.2f", x), limits = c(1, 4.75)) + 
+  facet_grid(Rep~Site, labeller = labeller(Site = c("BB" = "Wetland"), Rep = c("TR" = "Technical Replicates")) ) )
+
+
+ml.tech.mod <- lm(Yield ~ pH, dftech.m)
+ml.tech.aov <- aov(ml.tech.mod)
+summary(ml.tech.aov) #significant (0.0248)
+pairs(emmeans(ml.tech.mod, ~pH)) #4 vs 6 is significant 0.0332114
+
+
+(yieldplots.mgl <- dftech.m %>% 
+  ggplot(aes(as.factor(pH), Yield)) +
+  geom_line(data = . %>% group_by(Site, pH) %>% summarise(Mean = mean(Yield)), aes(y = Mean, group = Site), color = "gray", size = 1) +
+  geom_point(aes(fill = as.factor(pH)), pch = 21, alpha = 0.9, size = 3, col = 'black') +
+  labs(x =" ", y= "DNA Yield (ng/uL)")  +
+  theme_linedraw() +
+  scale_fill_manual(values = c('goldenrod1','darkolivegreen3','chartreuse4', 'darkcyan'))  + 
+  scale_x_discrete(labels=c("4" = "4.5", "5" = "5.5",
+                              "6" = "6.5", "8" = "7.5")) +
+  theme(text = element_text(size = 15),
+        legend.position = "none", panel.grid.major = element_line(color = "gray80"),
+    panel.grid.minor = element_line(color = "gray80")) + scale_y_continuous(labels = function(x) sprintf("%.2f", x)) + 
+  facet_wrap(~Site, labeller = labeller(Site = c("ML" = "Grassland")) ))
+
+(yieldplots.mgl.2 <- yieldplots.mgl + geom_line(data=tibble(x=c(1,3), y = c(0.32,0.32)), aes (x=x, y=y), inherit.aes = FALSE) + 
+  geom_text(data=tibble(x=2, y = c(0.33)), aes (x=x, y=y,  label = '*', size = 4), inherit.aes = FALSE))
+
+
+(together <- plot_grid(yieldplots.mgl.2, yieldplots.ang.2, yieldplots.bod, ncol=3, rel_widths = c(2.5,2.3,2.5)))
+#ggsave('TechnicalRepyields_withstats.png', together, dpi=300, width = 10, height = 6)
+```
+
+
+```{r}
+an.bio.mod <- lm(Yield ~ pH + Type, dfbio.a)
+an.bio.aov <- aov(an.bio.mod)
+summary(an.bio.aov ) #not significant
+
+(yieldplots.ang.bio <- dfbio.a %>% 
+  ggplot(aes(as.factor(pH), Yield)) +
+  geom_line(data = . %>% group_by(Site, pH) %>% summarise(Mean = mean(Yield)), aes(y = Mean, group = Site), color = "gray", size = 1) +
+  geom_point(aes(fill = as.factor(pH), shape = Type), alpha = 0.9, size = 3, col = 'black') +
+  labs(x ="pH", y= NULL)  +
+  theme_linedraw() +
+  scale_fill_manual(values = c('goldenrod1','darkolivegreen3','chartreuse4', 'darkcyan'))  + 
+  scale_x_discrete(labels=c("4" = "4.5", "5" = "5.5",
+                              "6" = "6.5", "8" = "7.5")) +
+  scale_shape_manual(values = c(21,22,24)) +
+  theme(text = element_text(size = 15),
+        legend.position = "none", panel.grid.major = element_line(color = "gray80"),
+    panel.grid.minor = element_line(color = "gray80")) + scale_y_continuous(labels = function(x) sprintf("%.2f", x)) + 
+  facet_wrap(~Site, labeller = labeller(Site = c("AN" = "Forest")) ))
+
+(yieldplots.ang.bioreps <- dfbio.a %>% 
+  ggplot(aes(Type, Yield)) +
+  geom_point(aes(fill = Type), pch = 21, alpha = 0.9, size = 3, col = 'black') +
+  labs(x ="Replicate", y= NULL)  +
+  theme_linedraw() +
+  scale_fill_manual(values = c('azure3','darkslategray', 'darksalmon'))  + 
+  theme(text = element_text(size = 15),
+        legend.position = "none", panel.grid.major = element_line(color = "gray80"),
+    panel.grid.minor = element_line(color = "gray80")) + scale_y_continuous(labels = function(x) sprintf("%.2f", x)) + 
+  facet_wrap(~Site, labeller = labeller(Site = c("AN" = "Forest")) ))
+
+#wetland - transformed vs not-transformed - similar results, proceeding with non-transformed to be consistent with graphs
+bb.bio.mod <- lm(Yield.tform ~ pH + Type, dfbio.b) #using xformed data (normally distributed)
+bb.bio.aov <- aov(bb.bio.mod)
+summary(bb.bio.aov) #not significant
+
+bb.bio.glm <- glm(Yield ~ pH + Type, dfbio.b, family = "Gamma") #good for continuous data that is right skewed
+summary(bb.bio.glm)
+anova(bb.bio.glm, test = 'Chisq') #not significant
+
+(yieldplots.bod.bio <- dfbio.b %>% 
+  ggplot(aes(as.factor(pH), Yield)) +
+  geom_line(data = . %>% group_by(Site, pH) %>% summarise(Mean = mean(Yield)), aes(y = Mean, group = Site), color = "gray", size = 1) +
+  geom_point(aes(fill = as.factor(pH), shape = Type),  alpha = 0.9, size = 3, col = 'black') +
+  labs(x =" ", y= NULL)  +
+  theme_linedraw() +
+  scale_shape_manual(values = c(21,22,24)) +
+  scale_fill_manual(values = c('goldenrod1','darkolivegreen3','chartreuse4', 'darkcyan'))  + 
+  scale_x_discrete(labels=c("4" = "4.5", "5" = "5.5",
+                              "6" = "6.5", "8" = "7.5")) +
+  theme(text = element_text(size = 15),
+        legend.position = "none", panel.grid.major = element_line(color = "gray80"),
+    panel.grid.minor = element_line(color = "gray80")) + #scale_y_continuous(labels = function(x) sprintf("%.2f", x), limits = c(2.4, 14)) + 
+  facet_grid(Rep~Site, labeller = labeller(Site = c("BB" = "Wetland"), Rep = c("BR" = "Biological Replicates")) ) ) 
+
+(yieldplots.bod.bioreps <- dfbio.b %>% 
+  ggplot(aes(Type, Yield)) +
+  geom_point(aes(fill = Type), pch = 21, alpha = 0.9, size = 3, col = 'black') +
+  labs(x =" ", y= NULL)  +
+  theme_linedraw() +
+  scale_fill_manual(values = c('azure3','darkslategray', 'darksalmon'))  + 
+  theme(text = element_text(size = 15),
+        legend.position = "none", panel.grid.major = element_line(color = "gray80"),
+    panel.grid.minor = element_line(color = "gray80")) + scale_y_continuous(labels = function(x) sprintf("%.2f", x)) + 
+  facet_grid(Rep~Site, labeller = labeller(Site = c("BB" = "Wetland"), Rep = c("BR" = "Biological Replicates")) ) ) 
+
+#grassland
+ml.bio.mod <- lm(Yield ~ pH + Type, dfbio.m) 
+ml.bio.aov <- aov(ml.bio.mod)
+summary(ml.bio.aov)  #type is singificantly different, pH approaching significance
+pairs(emmeans(ml.bio.mod, ~Type)) #1 vs 2 p val 0.0208861, 1 vs 3 0.0480201
+
+(yieldplots.mgl.bio <- dfbio.m %>% 
+  ggplot(aes(as.factor(pH), Yield)) +
+  geom_line(data = . %>% group_by(Site, pH) %>% summarise(Mean = mean(Yield)), aes(y = Mean, group = Site), color = "gray", size = 1) +
+  geom_point(aes(fill = as.factor(pH), shape = Type),alpha = 0.9, size = 3, col = 'black') +
+  labs(x =" ", y= "DNA Yield (ng/uL)")  +
+  theme_linedraw() +
+  scale_shape_manual(values = c(21,22,24)) +
+  scale_fill_manual(values = c('goldenrod1','darkolivegreen3','chartreuse4', 'darkcyan'))  + 
+  scale_x_discrete(labels=c("4" = "4.5", "5" = "5.5",
+                              "6" = "6.5", "8" = "7.5")) +
+  theme(text = element_text(size = 15),
+        legend.position = "none", panel.grid.major = element_line(color = "gray80"),
+    panel.grid.minor = element_line(color = "gray80")) + scale_y_continuous(labels = function(x) sprintf("%.2f", x), limits = c(.1, .6)) + 
+  facet_wrap(~Site, labeller = labeller(Site = c("ML" = "Grassland")) ))
+
+(yieldplots.mgl.bioreps <- dfbio.m %>% 
+  ggplot(aes(Type, Yield)) +
+  geom_point(aes(fill = Type, shape = Type), pch = 21, alpha = 0.9, size = 3, col = 'black') +
+  labs(x =" ", y= "DNA Yield (ng/uL)")  +
+  theme_linedraw() +
+  scale_fill_manual(values = c('azure3','darkslategray', 'darksalmon'))  + 
+  theme(text = element_text(size = 15),
+        legend.position = "none", panel.grid.major = element_line(color = "gray80"),
+    panel.grid.minor = element_line(color = "gray80")) + scale_y_continuous(labels = function(x) sprintf("%.2f", x), limits = c(.1, .6)) + 
+  facet_wrap(~Site, labeller = labeller(Site = c("ML" = "Grassland")) ))
+
+(yieldplots.mgl.bioreps.2 <- yieldplots.mgl.bioreps +
+    geom_line(data=tibble(x=c(1,2), y = c(.57,.57)), aes (x=x, y=y), inherit.aes = FALSE) +
+    geom_line(data=tibble(x=c(1,3), y = c(.53, .53)), aes (x=x, y=y), inherit.aes = FALSE) +
+    geom_text(data=tibble(x=1.5, y = c(.58)), aes (x=x, y=y,  label = '*', size = 4), inherit.aes = FALSE) +
+    geom_text(data=tibble(x=2, y = c(.54)), aes (x=x, y=y,  label = '*', size = 4), inherit.aes = FALSE))
+
+
+(together.bio <- plot_grid(yieldplots.mgl.bio, yieldplots.ang.bio, yieldplots.bod.bio, ncol=3, rel_widths = c(2.5,2.3,2.5)))
+(together.bio.reps <- plot_grid(yieldplots.mgl.bioreps.2, yieldplots.ang.bioreps, yieldplots.bod.bioreps, ncol=3, rel_widths = c(2.5,2.3,2.5)))
+
+#ggsave('BiologicalRepyields_withstats.png', together.bio, dpi=300, width = 10, height = 6)
+```
+
+
+```{r}
+(combinedyields <- plot_grid(together.bio, together.bio.reps, together, ncol = 1, labels = c('A','B','C')))
+ggsave('DNAYields_Allsoils_allreps.png', combinedyields, width = 10, height = 10)
+```
+
+
+

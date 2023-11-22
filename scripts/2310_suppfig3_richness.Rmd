@@ -1,0 +1,251 @@
+---
+title: "Untitled"
+author: "Jane Fudyma"
+date: "2023-09-08"
+output: html_document
+---
+```{r}
+library(tidyverse)
+library(agricolae)
+library(cowplot)
+library(ggpubr)
+```
+
+```{r}
+data <- read_csv('../data/2309_normalizedabundancetable_pHbioreps_rarefied_90readidentity.csv') %>% column_to_rownames(var = '...1') %>%  filter(rowSums(. != 0) > 0) %>% mutate_if(is.numeric, round)
+
+otu <- t(data)
+data_richness <- estimateR(otu)
+
+meta.in <- read.csv('../data/SampleMeta.csv') %>% filter(Rep == 'BR')
+meta.in$pH <- as.character(meta.in$pH)
+
+data_alphadiv <- as.data.frame(cbind(meta.in, t(data_richness)))
+
+#partition for plots
+data_alphadiv_an <- data_alphadiv %>% filter(Site == 'AN')
+data_alphadiv_bb <- data_alphadiv %>% filter(Site == 'BB')
+data_alphadiv_ml <- data_alphadiv %>% filter(Site == 'ML')
+```
+
+```{r}
+set_pH <-  c('goldenrod1','yellowgreen','darkseagreen4', 'darkcyan')
+set_reps <- c('azure3','darkslategray', 'darksalmon')
+```
+
+```{r}
+#checking for normality
+
+#forest
+shapiro.test(data_alphadiv_an$S.obs) #slightly left skewed but passes test and qq plot fine
+ggdensity(data_alphadiv_an$S.obs, fill = "lightgray")
+ggqqplot(data_alphadiv_an$S.obs)
+
+#grassland
+shapiro.test(data_alphadiv_ml$S.obs) #slightly right skewed but passes test and qq plot fine
+ggdensity(data_alphadiv_ml$S.obs, fill = "lightgray")
+ggqqplot(data_alphadiv_ml$S.obs)
+
+#wetland
+shapiro.test(data_alphadiv_bb$S.obs) #normalish, slight right skew, passes tests and qqplot with flying colors
+ggdensity(data_alphadiv_bb$S.obs, fill = "lightgray")
+ggqqplot(data_alphadiv_bb$S.obs)
+
+#proceed with lm and anova
+```
+
+```{r}
+#Forest:
+an.bio.lm.mod <- lm(S.obs ~ pH + Type, data_alphadiv_an)
+an.bio.aov <- aov(an.bio.lm.mod)
+summary(an.bio.aov) #not significant
+  
+(plot_pH_an <- ggplot(data_alphadiv_an, aes(x = pH, y = S.obs)) + 
+    geom_line(data = . %>% group_by(Site, pH) %>% summarise(Mean = mean(S.obs)), aes(y = Mean, group = Site), color = "gray", size = 1) +
+    geom_point(aes(fill=pH, shape=Type), alpha = 0.9, size = 3, col = 'black', show.legend = FALSE) +
+    scale_fill_manual(values = set_pH) +
+    scale_shape_manual(values = c(21,22,24)) +
+    scale_x_discrete(labels=c("4" = "4.5", "5" = "5.5","6" = "6.5", "8" = "7.5")) +
+    labs(x= 'pH', y= '', fill= 'pH') + theme_linedraw(base_size = 16) +
+    facet_grid(~Site, labeller = labeller(Site = c("AN" = "Forest"))))
+
+
+(plot_rep_an <- ggplot(data_alphadiv_an, aes(x = Type, y = S.obs)) + 
+    geom_point(aes(fill=Type), pch = 21, alpha = 0.9, size = 3, col = 'black', show.legend = FALSE) +
+    scale_fill_manual(values = set_reps) +
+    labs(x= 'Replicate', y= '') + theme_linedraw(base_size = 16) +
+    facet_grid(~Site, labeller = labeller(Site = c("AN" = "Forest"))))
+```
+
+```{r}
+#grassland:
+ml.bio.lm.mod <- lm(S.obs ~ pH + Type, data_alphadiv_ml)
+ml.bio.aov <- aov(ml.bio.lm.mod)
+summary(ml.bio.aov) # type is significant p = 0.205
+pairs(emmeans(ml.bio.lm.mod, ~Type)) #rep 1 vs rep 2 are significantly diff *
+  
+(plot_pH_ml <- ggplot(data_alphadiv_ml, aes(x = pH, y = S.obs)) + 
+    geom_line(data = . %>% group_by(Site, pH) %>% summarise(Mean = mean(S.obs)), aes(y = Mean, group = Site), color = "gray", size = 1) +
+    geom_point(aes(fill=pH, shape = Type), alpha = 0.9, size = 3, col = 'black', show.legend = FALSE) +
+    scale_fill_manual(values = set_pH) +
+    scale_shape_manual(values = c(21,22,24)) +
+    scale_x_discrete(labels=c("4" = "4.5", "5" = "5.5","6" = "6.5", "8" = "7.5")) +
+    labs(x= '', y= 'Viral Richness', fill= 'pH') + theme_linedraw(base_size = 16) +
+    facet_grid(~Site, labeller = labeller(Site = c("ML" = "Grassland"))))
+
+
+(plot_rep_ml <- ggplot(data_alphadiv_ml, aes(x = Type, y = S.obs)) + 
+    geom_point(aes(fill=Type), pch = 21, alpha = 0.9, size = 3, col = 'black', show.legend = FALSE) +
+    scale_fill_manual(values = set_reps) +
+    labs(x= '', y= 'Viral Richness') + theme_linedraw(base_size = 16) +
+    facet_grid(~Site, labeller = labeller(Site = c("ML" = "Grassland"))))
+
+(plot_rep_ml.2 <- plot_rep_ml +
+    geom_line(data=tibble(x=c(1,2), y = c(2650,2650)), aes (x=x, y=y), inherit.aes = FALSE) +
+    geom_text(data=tibble(x=1.5, y = c(2655)), aes (x=x, y=y,  label = '*', size = 4), inherit.aes = FALSE, show.legend = FALSE)
+    )
+
+```
+
+
+
+```{r}
+#wetland:
+bb.bio.lm.mod <- lm(S.obs ~ pH + Type, data_alphadiv_bb)
+bb.bio.aov <- aov(bb.bio.lm.mod)
+summary(bb.bio.aov) #pH and rep sig diff
+pairs(emmeans(bb.bio.lm.mod, ~pH)) #4 vs 6 are sig diff (p = 0.122)
+pairs(emmeans(bb.bio.lm.mod, ~Type)) #1 vs 2 are sig diff (p = 0.0280)
+
+  
+(plot_pH_bb <- ggplot(data_alphadiv_bb, aes(x = pH, y = S.obs)) + 
+    geom_line(data = . %>% group_by(Site, pH) %>% summarise(Mean = mean(S.obs)), aes(y = Mean, group = Site), color = "gray", size = 1) +
+    geom_point(aes(fill=pH, shape = Type), alpha = 0.9, size = 3, col = 'black', show.legend = FALSE) +
+    scale_fill_manual(values = set_pH) +
+    scale_shape_manual(values = c(21,22,24)) +
+    scale_x_discrete(labels=c("4" = "4.5", "5" = "5.5","6" = "6.5", "8" = "7.5")) +
+    labs(x= '', y= '', fill= 'pH') + theme_linedraw(base_size = 16) +
+    facet_grid(~Site, labeller = labeller(Site = c("BB" = "Wetland"))))
+
+(plot_pH_bb.2 <- plot_pH_bb +
+    geom_line(data=tibble(x=c(1,3), y = c(1600,1600)), aes (x=x, y=y), inherit.aes = FALSE) +
+    geom_text(data=tibble(x=2, y = c(1603)), aes (x=x, y=y,  label = '*', size = 4), inherit.aes = FALSE, show.legend = FALSE)
+    )
+
+
+(plot_rep_bb <- ggplot(data_alphadiv_bb, aes(x = Type, y = S.obs)) + 
+    geom_point(aes(fill=Type), pch = 21, alpha = 0.9, size = 3, col = 'black', show.legend = FALSE) +
+    scale_fill_manual(values = set_reps) +
+    labs(x= '', y= '') + theme_linedraw(base_size = 16) +
+    facet_grid(~Site, labeller = labeller(Site = c("BB" = "Wetland"))))
+
+(plot_rep_bb.2 <- plot_rep_bb +
+    geom_line(data=tibble(x=c(1,2), y = c(1600,1600)), aes (x=x, y=y), inherit.aes = FALSE) +
+    geom_text(data=tibble(x=1.5, y = c(1603)), aes (x=x, y=y,  label = '*', size = 4), inherit.aes = FALSE, show.legend = FALSE)
+    )
+```
+
+
+---------------
+Tehcnical Reps
+---------------
+
+```{r}
+data.tech <- read_csv('../data/2309_normalizedabundancetable_pHtechreps_rarefied_90%readidentity.csv') %>% column_to_rownames(var = "...1") %>% filter(rowSums(. != 0) > 0) %>% mutate_if(is.numeric, round)
+
+otu <- t(data.tech)
+data_richness.tech <- estimateR(otu)
+
+meta.in.tech  <- read.csv('../data/SampleMeta.csv') %>% filter(Rep == 'TR')
+meta.in.tech$pH <- as.character(meta.in.tech$pH)
+
+data_alphadiv.tech  <- as.data.frame(cbind(meta.in.tech, t(data_richness.tech )))
+
+#partition for plots
+data_alphadiv_an_tech <- data_alphadiv.tech %>% filter(Site == 'AN')
+data_alphadiv_bb_tech <- data_alphadiv.tech %>% filter(Site == 'BB')
+data_alphadiv_ml_tech <- data_alphadiv.tech %>% filter(Site == 'ML')
+```
+
+```{r}
+#check for normality
+
+#forest
+shapiro.test(data_alphadiv_an_tech$S.obs) #not normal, left skewed - using glm model
+ggdensity(data_alphadiv_an_tech$S.obs, fill = "lightgray")
+ggqqplot(data_alphadiv_an_tech$S.obs)
+
+#grassland
+shapiro.test(data_alphadiv_ml_tech$S.obs) #normal with slight bimodal distribution - but qqplot is fine
+ggdensity(data_alphadiv_ml_tech$S.obs, fill = "lightgray")
+ggqqplot(data_alphadiv_ml_tech$S.obs)
+
+#wetland
+shapiro.test(data_alphadiv_bb_tech$S.obs) #very normal
+ggdensity(data_alphadiv_bb_tech$S.obs, fill = "lightgray")
+ggqqplot(data_alphadiv_bb_tech$S.obs)
+
+```
+
+```{r}
+#need to use glm for non-normal data because I don't want to transform counts
+
+an.tech.mod <- glm(S.obs ~ pH, data_alphadiv_an_tech, family = "poisson") #good for count data
+summary(an.tech.mod )
+#checking overdispersion:
+an.tech.mod$deviance/an.tech.mod$df.residual  #1.2, between 1-2 but closer to 1, slight overdispersion but not concerning so can proceed 
+anova(an.tech.mod, test = 'Chisq') #analysis of deviance, not significant
+
+  
+(plot_pH_an_tech <- ggplot(data_alphadiv_an_tech, aes(x = pH, y = S.obs)) + 
+    geom_line(data = . %>% group_by(Site, pH) %>% summarise(Mean = mean(S.obs)), aes(y = Mean, group = Site), color = "gray", size = 1) +
+    geom_point(aes(fill=pH),  pch = 21, alpha = 0.9, size = 3, col = 'black', show.legend = FALSE) +
+    scale_fill_manual(values = set_pH) +
+    scale_x_discrete(labels=c("4" = "4.5", "5" = "5.5","6" = "6.5", "8" = "7.5")) +
+    labs(x= 'pH', y= '', fill= 'pH') + theme_linedraw(base_size = 16) +
+    facet_grid(~Site, labeller = labeller(Site = c("AN" = "Forest"))))
+```
+
+```{r}
+ml.tech.lm <- lm(S.obs ~ pH, data_alphadiv_ml_tech)
+ml.tech.aov <- aov(ml.tech.lm ) 
+summary(ml.tech.aov) #pH is significant
+pairs(emmeans(ml.tech.lm, ~pH)) #4 vs 6 and 4 vs 8 significant
+
+  
+(plot_pH_ml_tech <- ggplot(data_alphadiv_ml_tech, aes(x = pH, y = S.obs)) + 
+    geom_line(data = . %>% group_by(Site, pH) %>% summarise(Mean = mean(S.obs)), aes(y = Mean, group = Site), color = "gray", size = 1) +
+    geom_point(aes(fill=pH),  pch = 21, alpha = 0.9, size = 3, col = 'black', show.legend = FALSE) +
+    scale_fill_manual(values = set_pH) +
+    scale_x_discrete(labels=c("4" = "4.5", "5" = "5.5","6" = "6.5", "8" = "7.5")) +
+    labs(x= '', y= 'Viral Richness', fill= 'pH') + theme_linedraw(base_size = 16) +
+    facet_grid(~Site, labeller = labeller(Site = c("ML" = "Grassland"))))
+
+(plot_pH_ml_tech.2 <- plot_pH_ml_tech +
+    geom_line(data=tibble(x=c(1,3), y = c(1873,1873)), aes (x=x, y=y), inherit.aes = FALSE) +
+    geom_line(data=tibble(x=c(1,4), y = c(1882, 1882)), aes (x=x, y=y), inherit.aes = FALSE) +
+    geom_text(data=tibble(x=2, y = c(1875)), aes (x=x, y=y,  label = '*', size = 4), inherit.aes = FALSE, show.legend = FALSE) +
+    geom_text(data=tibble(x=2.5, y = c(1884)), aes (x=x, y=y,  label = '**', size = 4), inherit.aes = FALSE, show.legend = FALSE))
+```
+
+```{r}
+bb.tech.lm <- lm(S.obs ~ pH, data_alphadiv_bb_tech)
+bb.tech.aov <- aov(bb.tech.lm ) 
+summary(bb.tech.aov) #not significant
+  
+(plot_pH_bb_tech <- ggplot(data_alphadiv_bb_tech, aes(x = pH, y = S.obs)) + 
+    geom_line(data = . %>% group_by(Site, pH) %>% summarise(Mean = mean(S.obs)), aes(y = Mean, group = Site), color = "gray", size = 1) +
+    geom_point(aes(fill=pH),  pch = 21, alpha = 0.9, size = 3, col = 'black', show.legend = FALSE) +
+    scale_fill_manual(values = set_pH) +
+    scale_x_discrete(labels=c("4" = "4.5", "5" = "5.5","6" = "6.5", "8" = "7.5")) +
+    labs(x= '', y= '', fill= 'pH') + theme_linedraw(base_size = 16) +
+    facet_grid(~Site, labeller = labeller(Site = c("BB" = "Wetland"))))
+```
+
+
+```{r}
+(all <- plot_grid(plot_pH_ml, plot_pH_an, plot_pH_bb.2, plot_rep_ml.2, plot_rep_an, plot_rep_bb.2, plot_pH_ml_tech.2, plot_pH_an_tech, plot_pH_bb_tech, ncol = 3, labels = c("A", "", "", "B", "", "", "C"), rel_widths = c(1,1,1.1,1,1,1.1,1,1,1.1)))
+
+ggsave('Richness_allsoils_rarefied.png', all, dpi = 300, height = 10, width = 10)
+```
+
