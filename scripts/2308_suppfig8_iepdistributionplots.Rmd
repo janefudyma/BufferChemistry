@@ -1,0 +1,95 @@
+---
+title: "Untitled"
+author: "Jane Fudyma"
+date: "2023-08-19"
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+library(seqinr)
+library(ggpubr)
+library(cowplot)
+```
+
+
+```{r}
+#IEP function
+
+add_pI_column <- function(df) {
+  # Apply the s2c function to convert values in Column2 to vectors
+  df$sequences <- sapply(df$seq_aa, s2c)
+  
+  # Calculate isoelectric points using computePI
+  df$pI <- sapply(df$sequences, computePI)
+  
+  return(df)
+}
+```
+
+
+```{r}
+#IEP distributions for ALL soils!!
+
+df <- read.table('../data/2309.paladin.surfaceproteinsfinal.mean.tsv',sep = "\t", header=T) %>% 
+  column_to_rownames(var='Contig') %>% 
+  filter(rowSums(. != 0) > 0) %>% 
+  rownames_to_column(var='protein_id')
+
+squn <- read_csv('../data/2306_surfaceproteins_vcontactdatabase_AAsequences.csv')
+
+df <- df  %>% left_join(squn, by ="protein_id")
+df <- add_pI_column(df)
+df <- df %>% column_to_rownames(var = 'protein_id') 
+
+
+df2 <- df %>% select(-seq_name,-seq_aa, -virus, -sequences) #select samples and pI
+df2 <- df2 %>% mutate(across(-c(pI), ~ifelse(. > 0, pI, .))) %>% select (-pI) #add the pI to every sample that had that protein in it
+
+df3 <- as.data.frame(t(df2)) %>% rownames_to_column(var = 'SampleID')
+
+df.tidy <- df3 %>%  pivot_longer(cols = -SampleID, names_to = "ProteinID", values_to = "IEP") %>% filter(IEP>0)
+df.tidy$pH <- substr(df.tidy$SampleID, 8, 8)
+df.tidy$soil <- substr(df.tidy$SampleID, 1,2)
+
+df.tidy$soil <- factor(df.tidy$soil, levels=c("ML", "AN", "BB"))
+
+
+(plot1 <-  ggplot(df.tidy, aes(x=IEP, fill = soil)) + geom_density(alpha=0.7) + theme_linedraw() + 
+  labs(x = 'Isoelectric Point', y = 'Density') + 
+  facet_wrap(~soil, ncol=1, labeller = labeller(soil = c("ML" = "Grassland","AN" = "Forest", "BB" = "Wetland"))) + xlim(2.5, 12.5) + 
+  scale_fill_manual(values = c('burlywood1', 'darkslateblue', 'cornflowerblue')) + theme( panel.grid.major = element_line(color = "gray80"),
+    panel.grid.minor = element_line(color = "gray80"), legend.position = 'none'))
+
+df.tidy.a <- df.tidy %>% filter(soil == 'AN')
+df.tidy.b <- df.tidy %>% filter(soil == 'BB')
+df.tidy.m <- df.tidy %>% filter(soil == 'ML')
+
+shapiro.test(df.tidy.a$IEP) # non-normal - from plot above - right skewed, but continuous data - use gamma
+shapiro.test(df.tidy.b$IEP) # non-normal - from plot above - right skewed, but continuous data - use gamma
+shapiro.test(df.tidy.m$IEP) # non-normal- from plot above - right skewed, but continuous data - use gamma
+
+a.mod <- glm(IEP ~ pH, df.tidy.a, family = "Gamma") #good for continous that is right skewed
+a.mod$deviance/a.mod$df.residual #checking overdispersion - 0.0215, no overdispersion
+anova(a.mod, test = 'Chisq') #not significant
+
+b.mod <- glm(IEP ~ pH, df.tidy.b, family = "Gamma") #good for continous that is right skewed
+b.mod$deviance/b.mod$df.residual #checking overdispersion - 0.05063966, no overdispersion
+anova(b.mod, test = 'Chisq') #not significant
+
+m.mod <- glm(IEP ~ pH, df.tidy.m, family = "Gamma") #good for continous that is right skewed
+m.mod$deviance/m.mod$df.residual #checking overdispersion - 0.02397412, no overdispersion
+anova(m.mod, test = 'Chisq') #not significant
+
+
+(pic1 <- ggplot(df.tidy, aes(pH, IEP, fill = pH)) + geom_boxplot(show.legend = FALSE) + theme_linedraw() + 
+  labs(y = 'Isoelectric Point') + 
+  scale_x_discrete(labels=c("4" = "4.5", "5" = "5.5","6" = "6.5","8" = "7.5")) +
+  scale_fill_manual(values = c('goldenrod1','darkolivegreen3','chartreuse4', 'darkcyan')) + facet_wrap(~soil, nrow = 1, labeller = labeller(soil = c("ML" = "Grassland","AN" = "Forest", "BB" = "Wetland"))) + theme( panel.grid.major = element_line(color = "gray80"),
+    panel.grid.minor = element_line(color = "gray80")))
+
+
+(sfig <- plot_grid(plot1, pic1, ncol = 2, labels = c('A','B'), rel_widths = c(2, 1.5)))
+ggsave('IEPDistribution_bysoil_byPH_SuppFig.png', sfig, width = 10, height = 4)
+```
+

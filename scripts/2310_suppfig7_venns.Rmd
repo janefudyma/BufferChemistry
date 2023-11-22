@@ -1,0 +1,300 @@
+---
+title: "Untitled"
+author: "Jane Fudyma"
+date: "2023-09-14"
+output: html_document
+---
+
+```{r}
+library('tidyverse')
+library('ggvenn')
+library('cowplot')
+```
+
+
+```{r}
+biopH <- read.csv('../data/2309_normalizedabundancetable_pHbioreps_rarefied_90readidentity.csv') 
+biopH <-  biopH %>% mutate_if(is.numeric, ~ ifelse(. > 0, 1, 0)) %>% column_to_rownames(var = 'X')
+techpH <- read.csv('../data/2309_normalizedabundancetable_pHtechreps_rarefied_90%readidentity.csv')
+techpH <-  techpH %>% mutate_if(is.numeric, ~ ifelse(. > 0, 1, 0)) %>% column_to_rownames(var = 'X')
+
+#filter for bio and tech reps, getting rid of singletons 
+biopH.AN <- biopH %>% select(AN_BR1_4:AN_BR3_8) %>% filter_all(any_vars(. != 0)) %>% filter(rowSums(select(., where(is.numeric))) >= 2)
+bioRep.AN <- biopH %>% select(AN_BR1_4:AN_BR3_8) %>% filter_all(any_vars(. != 0)) %>% filter(rowSums(select(., where(is.numeric))) >= 2)
+techpH.AN <- techpH %>% select(AN_TR1_4:AN_TR3_8) %>% filter_all(any_vars(. != 0)) %>% filter(rowSums(select(., where(is.numeric))) >= 2)
+
+biopH.BB <- biopH %>% select(BB_BR1_4:BB_BR3_8) %>% filter_all(any_vars(. != 0)) %>% filter(rowSums(select(., where(is.numeric))) >= 2)
+bioRep.BB <- biopH %>% select(BB_BR1_4:BB_BR3_8) %>% filter_all(any_vars(. != 0)) %>% filter(rowSums(select(., where(is.numeric))) >= 2)
+techpH.BB <- techpH %>% select(BB_TR1_4:BB_TR3_8) %>% filter_all(any_vars(. != 0)) %>% filter(rowSums(select(., where(is.numeric))) >= 2)
+
+biopH.ML <- biopH %>% select(ML_BR1_4:ML_BR3_8) %>% filter_all(any_vars(. != 0)) %>% filter(rowSums(select(., where(is.numeric))) >= 2)
+bioRep.ML <- biopH %>% select(ML_BR1_4:ML_BR3_8) %>% filter_all(any_vars(. != 0)) %>% filter(rowSums(select(., where(is.numeric))) >= 2)
+techpH.ML <- techpH %>% select(ML_TR1_4:ML_TR3_8) %>% filter_all(any_vars(. != 0)) %>% filter(rowSums(select(., where(is.numeric))) >= 2)
+```
+
+
+
+```{r}
+#Forest
+
+#Bio reps by pH
+biopH.AN <- biopH.AN %>% mutate(pH4 = rowSums(select(., ends_with("4"))))
+biopH.AN <- biopH.AN %>% mutate(pH5 = rowSums(select(., ends_with("5"))))
+biopH.AN <- biopH.AN %>% mutate(pH6 = rowSums(select(., ends_with("6"))))
+biopH.AN <- biopH.AN %>% mutate(pH8 = rowSums(select(., ends_with("8"))))
+
+bio.pH.AN <- biopH.AN %>% select(pH4:pH8)
+
+bio.pH.AN$pH4[bio.pH.AN$pH4 > 2] <- (rownames(bio.pH.AN)[bio.pH.AN$pH4 > 2]) #counting if in all reps, if so, replacing that value with the contig name
+bio.pH.AN$pH5[bio.pH.AN$pH5 > 2] <- (rownames(bio.pH.AN)[bio.pH.AN$pH5 > 2]) #counting if in all reps, if so, replacing that value with the contig name
+bio.pH.AN$pH6[bio.pH.AN$pH6 > 2] <- (rownames(bio.pH.AN)[bio.pH.AN$pH6 > 2]) #counting if in all reps, if so, replacing that value with the contig name
+bio.pH.AN$pH8[bio.pH.AN$pH8 > 2] <- (rownames(bio.pH.AN)[bio.pH.AN$pH8 > 2]) #counting if in all reps, if so, replacing that value with the contig name
+bio.pH.AN <- bio.pH.AN %>% mutate(across(where(is.numeric), ~ ifelse(!is.na(.), NA, .))) #setting NA to contigs that have been filtered out so they aren't counted in the analysis
+
+
+list.biorep.pH.AN <- list(pH4.5=bio.pH.AN$pH4,
+              pH5.5=bio.pH.AN$pH5,
+              pH6.5=bio.pH.AN$pH6,
+              pH7.5=bio.pH.AN$pH8
+          )
+
+
+(venn.ANbio.pH <- ggvenn(list.biorep.pH.AN, fill_color = c('goldenrod1','darkolivegreen3','chartreuse4', 'darkcyan'), stroke_size = 0.5, text_size = 4.5, set_name_size = 0, show_percentage = FALSE ) + ggtitle("Forest Bio Reps") + ggtitle("Forest Bio Reps") + theme(plot.title = element_text(hjust = 0.5, face = "bold")))
+
+
+
+#Bio Reps by BioRep
+bioRep.AN <- bioRep.AN %>% mutate(Rep1 = rowSums(select(., starts_with("AN_BR1"))))
+bioRep.AN <- bioRep.AN %>% mutate(Rep2 = rowSums(select(., starts_with("AN_BR2"))))
+bioRep.AN <- bioRep.AN %>% mutate(Rep3 = rowSums(select(., starts_with("AN_BR3"))))
+
+bio.rep.AN <- bioRep.AN %>% select(Rep1:Rep3)
+
+bio.rep.AN$Rep1[bio.rep.AN$Rep1 > 3] <- (rownames(bio.rep.AN)[bio.rep.AN$Rep1 > 3]) #select contigs that are found in all pH treatments
+bio.rep.AN$Rep2[bio.rep.AN$Rep2 > 3] <- (rownames(bio.rep.AN)[bio.rep.AN$Rep2 > 3])
+bio.rep.AN$Rep3[bio.rep.AN$Rep3 > 3] <- (rownames(bio.rep.AN)[bio.rep.AN$Rep3 > 3])
+bio.rep.AN <- bio.rep.AN %>% mutate(across(where(is.numeric), ~ ifelse(!is.na(.), NA, .)))
+
+
+list.biorep.rep.AN <- list(Rep1=bio.rep.AN$Rep1,
+              Rep2=bio.rep.AN$Rep2,
+              Rep3=bio.rep.AN$Rep3
+          )
+
+
+(venn.AN.bio.reps <- ggvenn(list.biorep.rep.AN, fill_color = c('azure3','darkslategray', 'darksalmon'), stroke_size = 0.5, text_size = 4.5, set_name_size = 0, show_percentage = FALSE ) 
+  + ggtitle("Forest Bio Reps") + ggtitle("Forest Bio Reps") + theme(plot.title = element_text(hjust = 0.5, face = "bold")))
+
+
+#TECHNICAL REPS BY pH
+techpH.AN <- techpH.AN %>% mutate(pH4 = rowSums(select(., ends_with("4"))))
+techpH.AN <- techpH.AN %>% mutate(pH5 = rowSums(select(., ends_with("5"))))
+techpH.AN <- techpH.AN %>% mutate(pH6 = rowSums(select(., ends_with("6"))))
+techpH.AN <- techpH.AN %>% mutate(pH8 = rowSums(select(., ends_with("8"))))
+
+tech.pH.AN <- techpH.AN %>% select(pH4:pH8)
+
+tech.pH.AN$pH4[tech.pH.AN$pH4 > 2] <- (rownames(tech.pH.AN)[tech.pH.AN$pH4 > 2]) #counting if in all reps, if so, replacing that value with the contig name
+tech.pH.AN$pH5[tech.pH.AN$pH5 > 2] <- (rownames(tech.pH.AN)[tech.pH.AN$pH5 > 2]) #counting if in all reps, if so, replacing that value with the contig name
+tech.pH.AN$pH6[tech.pH.AN$pH6 > 2] <- (rownames(tech.pH.AN)[tech.pH.AN$pH6 > 2]) #counting if in all reps, if so, replacing that value with the contig name
+tech.pH.AN$pH8[tech.pH.AN$pH8 > 2] <- (rownames(tech.pH.AN)[tech.pH.AN$pH8 > 2]) #counting if in all reps, if so, replacing that value with the contig name
+tech.pH.AN <- tech.pH.AN %>% mutate(across(where(is.numeric), ~ ifelse(!is.na(.), NA, .))) #setting NA to contigs that have been filtered out so they aren't counted in the analysis
+
+
+list.techrep.pH.AN <- list(pH4.5=tech.pH.AN$pH4,
+              pH5.5=tech.pH.AN$pH5,
+              pH6.5=tech.pH.AN$pH6,
+              pH7.5=tech.pH.AN$pH8
+          )
+
+
+(venn.ANtech.pH <- ggvenn(list.techrep.pH.AN, fill_color = c('goldenrod1','darkolivegreen3','chartreuse4', 'darkcyan'), stroke_size = 0.5, text_size = 4.5, set_name_size = 0, show_percentage = FALSE ) + ggtitle("Forest Tech Reps") + theme(plot.title = element_text(hjust = 0.5, face = "bold")))
+```
+
+
+```{r}
+#GRASSLAND
+
+#Bio reps by pH
+biopH.ML <- biopH.ML %>% mutate(pH4 = rowSums(select(., ends_with("4"))))
+biopH.ML <- biopH.ML %>% mutate(pH5 = rowSums(select(., ends_with("5"))))
+biopH.ML <- biopH.ML %>% mutate(pH6 = rowSums(select(., ends_with("6"))))
+biopH.ML <- biopH.ML %>% mutate(pH8 = rowSums(select(., ends_with("8"))))
+
+bio.pH.ML <- biopH.ML %>% select(pH4:pH8)
+
+bio.pH.ML$pH4[bio.pH.ML$pH4 > 2] <- (rownames(bio.pH.ML)[bio.pH.ML$pH4 > 2]) #counting if in all reps, if so, replacing that value with the contig name
+bio.pH.ML$pH5[bio.pH.ML$pH5 > 2] <- (rownames(bio.pH.ML)[bio.pH.ML$pH5 > 2]) #counting if in all reps, if so, replacing that value with the contig name
+bio.pH.ML$pH6[bio.pH.ML$pH6 > 2] <- (rownames(bio.pH.ML)[bio.pH.ML$pH6 > 2]) #counting if in all reps, if so, replacing that value with the contig name
+bio.pH.ML$pH8[bio.pH.ML$pH8 > 2] <- (rownames(bio.pH.ML)[bio.pH.ML$pH8 > 2]) #counting if in all reps, if so, replacing that value with the contig name
+bio.pH.ML <- bio.pH.ML %>% mutate(across(where(is.numeric), ~ ifelse(!is.na(.), NA, .))) #setting NA to contigs that have been filtered out so they aren't counted in the analysis
+
+
+list.biorep.pH.ML <- list(pH4.5=bio.pH.ML$pH4,
+              pH5.5=bio.pH.ML$pH5,
+              pH6.5=bio.pH.ML$pH6,
+              pH7.5=bio.pH.ML$pH8
+          )
+
+
+(venn.MLbio.pH <- ggvenn(list.biorep.pH.ML, fill_color = c('goldenrod1','darkolivegreen3','chartreuse4', 'darkcyan'), stroke_size = 0.5, text_size = 4.5, set_name_size = 0, show_percentage = FALSE ) + ggtitle("Grassland Bio Reps") + ggtitle("Grassland Bio Reps") + theme(plot.title = element_text(hjust = 0.5, face = "bold")))
+
+
+
+#Bio Reps by BioRep
+bioRep.ML <- bioRep.ML %>% mutate(Rep1 = rowSums(select(., starts_with("ML_BR1"))))
+bioRep.ML <- bioRep.ML %>% mutate(Rep2 = rowSums(select(., starts_with("ML_BR2"))))
+bioRep.ML <- bioRep.ML %>% mutate(Rep3 = rowSums(select(., starts_with("ML_BR3"))))
+
+bio.rep.ML <- bioRep.ML %>% select(Rep1:Rep3)
+
+bio.rep.ML$Rep1[bio.rep.ML$Rep1 > 3] <- (rownames(bio.rep.ML)[bio.rep.ML$Rep1 > 3]) #select contigs that are found in all pH treatments
+bio.rep.ML$Rep2[bio.rep.ML$Rep2 > 3] <- (rownames(bio.rep.ML)[bio.rep.ML$Rep2 > 3])
+bio.rep.ML$Rep3[bio.rep.ML$Rep3 > 3] <- (rownames(bio.rep.ML)[bio.rep.ML$Rep3 > 3])
+bio.rep.ML <- bio.rep.ML %>% mutate(across(where(is.numeric), ~ ifelse(!is.na(.), NA, .)))
+
+
+list.biorep.rep.ML <- list(Rep1=bio.rep.ML$Rep1,
+              Rep2=bio.rep.ML$Rep2,
+              Rep3=bio.rep.ML$Rep3
+          )
+
+
+(venn.ML.bio.reps <- ggvenn(list.biorep.rep.ML, fill_color = c('azure3','darkslategray', 'darksalmon'), stroke_size = 0.5, text_size = 4.5, set_name_size = 0, show_percentage = FALSE ) 
+  + ggtitle("Grassland Bio Reps") + ggtitle("Grassland Bio Reps") + theme(plot.title = element_text(hjust = 0.5, face = "bold")))
+
+
+#TECHNICAL REPS BY pH
+techpH.ML <- techpH.ML %>% mutate(pH4 = rowSums(select(., ends_with("4"))))
+techpH.ML <- techpH.ML %>% mutate(pH5 = rowSums(select(., ends_with("5"))))
+techpH.ML <- techpH.ML %>% mutate(pH6 = rowSums(select(., ends_with("6"))))
+techpH.ML <- techpH.ML %>% mutate(pH8 = rowSums(select(., ends_with("8"))))
+
+tech.pH.ML <- techpH.ML %>% select(pH4:pH8)
+
+tech.pH.ML$pH4[tech.pH.ML$pH4 > 2] <- (rownames(tech.pH.ML)[tech.pH.ML$pH4 > 2]) #counting if in all reps, if so, replacing that value with the contig name
+tech.pH.ML$pH5[tech.pH.ML$pH5 > 2] <- (rownames(tech.pH.ML)[tech.pH.ML$pH5 > 2]) #counting if in all reps, if so, replacing that value with the contig name
+tech.pH.ML$pH6[tech.pH.ML$pH6 > 2] <- (rownames(tech.pH.ML)[tech.pH.ML$pH6 > 2]) #counting if in all reps, if so, replacing that value with the contig name
+tech.pH.ML$pH8[tech.pH.ML$pH8 > 2] <- (rownames(tech.pH.ML)[tech.pH.ML$pH8 > 2]) #counting if in all reps, if so, replacing that value with the contig name
+tech.pH.ML <- tech.pH.ML %>% mutate(across(where(is.numeric), ~ ifelse(!is.na(.), NA, .))) #setting NA to contigs that have been filtered out so they aren't counted in the analysis
+
+
+list.techrep.pH.ML <- list(pH4.5=tech.pH.ML$pH4,
+              pH5.5=tech.pH.ML$pH5,
+              pH6.5=tech.pH.ML$pH6,
+              pH7.5=tech.pH.ML$pH8
+          )
+
+
+(venn.MLtech.pH <- ggvenn(list.techrep.pH.ML, fill_color = c('goldenrod1','darkolivegreen3','chartreuse4', 'darkcyan'), stroke_size = 0.5, text_size = 4.5, set_name_size = 0, show_percentage = FALSE ) + ggtitle("Grassland Tech Reps") + theme(plot.title = element_text(hjust = 0.5, face = "bold")))
+```
+
+
+```{r}
+#Wetland
+
+#Bio reps by pH
+biopH.BB <- biopH.BB %>% mutate(pH4 = rowSums(select(., ends_with("4"))))
+biopH.BB <- biopH.BB %>% mutate(pH5 = rowSums(select(., ends_with("5"))))
+biopH.BB <- biopH.BB %>% mutate(pH6 = rowSums(select(., ends_with("6"))))
+biopH.BB <- biopH.BB %>% mutate(pH8 = rowSums(select(., ends_with("8"))))
+
+bio.pH.BB <- biopH.BB %>% select(pH4:pH8)
+
+bio.pH.BB$pH4[bio.pH.BB$pH4 > 2] <- (rownames(bio.pH.BB)[bio.pH.BB$pH4 > 2]) #counting if in all reps, if so, replacing that value with the contig name
+bio.pH.BB$pH5[bio.pH.BB$pH5 > 2] <- (rownames(bio.pH.BB)[bio.pH.BB$pH5 > 2]) #counting if in all reps, if so, replacing that value with the contig name
+bio.pH.BB$pH6[bio.pH.BB$pH6 > 2] <- (rownames(bio.pH.BB)[bio.pH.BB$pH6 > 2]) #counting if in all reps, if so, replacing that value with the contig name
+bio.pH.BB$pH8[bio.pH.BB$pH8 > 2] <- (rownames(bio.pH.BB)[bio.pH.BB$pH8 > 2]) #counting if in all reps, if so, replacing that value with the contig name
+bio.pH.BB <- bio.pH.BB %>% mutate(across(where(is.numeric), ~ ifelse(!is.na(.), NA, .))) #setting NA to contigs that have been filtered out so they aren't counted in the analysis
+
+
+list.biorep.pH.BB <- list(pH4.5=bio.pH.BB$pH4,
+              pH5.5=bio.pH.BB$pH5,
+              pH6.5=bio.pH.BB$pH6,
+              pH7.5=bio.pH.BB$pH8
+          )
+
+
+(venn.BBbio.pH <- ggvenn(list.biorep.pH.BB, fill_color = c('goldenrod1','darkolivegreen3','chartreuse4', 'darkcyan'), stroke_size = 0.5, text_size = 4.5, set_name_size = 0, show_percentage = FALSE ) + ggtitle("Wetland Bio Reps")  + theme(plot.title = element_text(hjust = 0.5, face = "bold")))
+
+
+
+#Bio Reps by BioRep
+bioRep.BB <- bioRep.BB %>% mutate(Rep1 = rowSums(select(., starts_with("BB_BR1"))))
+bioRep.BB <- bioRep.BB %>% mutate(Rep2 = rowSums(select(., starts_with("BB_BR2"))))
+bioRep.BB <- bioRep.BB %>% mutate(Rep3 = rowSums(select(., starts_with("BB_BR3"))))
+
+bio.rep.BB <- bioRep.BB %>% select(Rep1:Rep3)
+
+bio.rep.BB$Rep1[bio.rep.BB$Rep1 > 3] <- (rownames(bio.rep.BB)[bio.rep.BB$Rep1 > 3]) #select contigs that are found in all pH treatments
+bio.rep.BB$Rep2[bio.rep.BB$Rep2 > 3] <- (rownames(bio.rep.BB)[bio.rep.BB$Rep2 > 3])
+bio.rep.BB$Rep3[bio.rep.BB$Rep3 > 3] <- (rownames(bio.rep.BB)[bio.rep.BB$Rep3 > 3])
+bio.rep.BB <- bio.rep.BB %>% mutate(across(where(is.numeric), ~ ifelse(!is.na(.), NA, .)))
+
+
+list.biorep.rep.BB <- list(Rep1=bio.rep.BB$Rep1,
+              Rep2=bio.rep.BB$Rep2,
+              Rep3=bio.rep.BB$Rep3
+          )
+
+
+(venn.BB.bio.reps <- ggvenn(list.biorep.rep.BB, fill_color = c('azure3','darkslategray', 'darksalmon'), stroke_size = 0.5, text_size = 4.5, set_name_size = 0, show_percentage = FALSE ) 
+  + ggtitle("Wetland Bio Reps") + theme(plot.title = element_text(hjust = 0.5, face = "bold")))
+
+
+#TECHNICAL REPS BY pH
+techpH.BB <- techpH.BB %>% mutate(pH4 = rowSums(select(., ends_with("4"))))
+techpH.BB <- techpH.BB %>% mutate(pH5 = rowSums(select(., ends_with("5"))))
+techpH.BB <- techpH.BB %>% mutate(pH6 = rowSums(select(., ends_with("6"))))
+techpH.BB <- techpH.BB %>% mutate(pH8 = rowSums(select(., ends_with("8"))))
+
+tech.pH.BB <- techpH.BB %>% select(pH4:pH8)
+
+tech.pH.BB$pH4[tech.pH.BB$pH4 > 2] <- (rownames(tech.pH.BB)[tech.pH.BB$pH4 > 2]) #counting if in all reps, if so, replacing that value with the contig name
+tech.pH.BB$pH5[tech.pH.BB$pH5 > 2] <- (rownames(tech.pH.BB)[tech.pH.BB$pH5 > 2]) #counting if in all reps, if so, replacing that value with the contig name
+tech.pH.BB$pH6[tech.pH.BB$pH6 > 2] <- (rownames(tech.pH.BB)[tech.pH.BB$pH6 > 2]) #counting if in all reps, if so, replacing that value with the contig name
+tech.pH.BB$pH8[tech.pH.BB$pH8 > 2] <- (rownames(tech.pH.BB)[tech.pH.BB$pH8 > 2]) #counting if in all reps, if so, replacing that value with the contig name
+tech.pH.BB <- tech.pH.BB %>% mutate(across(where(is.numeric), ~ ifelse(!is.na(.), NA, .))) #setting NA to contigs that have been filtered out so they aren't counted in the analysis
+
+
+list.techrep.pH.BB <- list(pH4.5=tech.pH.BB$pH4,
+              pH5.5=tech.pH.BB$pH5,
+              pH6.5=tech.pH.BB$pH6,
+              pH7.5=tech.pH.BB$pH8
+          )
+
+
+(venn.BBtech.pH <- ggvenn(list.techrep.pH.BB, fill_color = c('goldenrod1','darkolivegreen3','chartreuse4', 'darkcyan'), stroke_size = 0.5, text_size = 4.5, set_name_size = 0, show_percentage = FALSE ) + ggtitle("Wetland Tech Reps") + theme(plot.title = element_text(hjust = 0.5, face = "bold")))
+```
+
+```{r}
+# Define the data for legends
+legend_data1 <- data.frame(pH = c("4.5", "5.5", "6.5", "7.5"))
+legend_data2 <- data.frame(Rep = c("BR1", "BR2", "BR3"))
+
+# Create the first legend with colors
+(pH_plot <- ggplot() + geom_point(data = legend_data1, aes(x = 1, y = pH, fill = pH), color = 'black', pch = 21, size = 5, show.legend = TRUE) +
+  scale_fill_manual(values = c('goldenrod1', 'darkolivegreen3', 'chartreuse4', 'darkcyan')) + theme_minimal() + theme(legend.position = "bottom",  legend.title = element_text(face = 'bold')) )
+
+# Create the second legend with colors
+(rep_plot <- ggplot() + 
+  geom_point(data = legend_data2, aes(x = 2, y = Rep, fill = Rep), color = 'black', pch = 21, size = 5, show.legend = TRUE) +
+  scale_fill_manual(values = c('azure3', 'darkslategray', 'darksalmon'))  + theme_minimal() + theme(legend.position = "bottom", legend.title = element_text(face = 'bold')) )
+
+
+```
+
+
+```{r}
+(vens <- plot_grid(venn.ANbio.pH, venn.AN.bio.reps, venn.ANtech.pH, venn.MLbio.pH, venn.ML.bio.reps, venn.MLtech.pH, venn.BBbio.pH, venn.BB.bio.reps, venn.BBtech.pH, ncol = 3, labels = c('A', '','', 'B', '', '', 'C')))
+
+legend1 <- get_legend(pH_plot)
+legend2 <- get_legend(rep_plot)
+
+legends <- plot_grid(legend1, NULL, legend2, ncol = 3, rel_widths = c(1,-.7,1))
+
+(vens.legs <- plot_grid(vens, NULL, legends, NULL, ncol = 1, rel_heights = c(1, -.07, .2, -.05)) + theme(plot.background = element_rect(fill = "white", color = 'white')))
+
+ggsave('SuppFig_Venns_pH_All.png', vens.legs, dpi = 300, width = 13, height = 11)
+```
+

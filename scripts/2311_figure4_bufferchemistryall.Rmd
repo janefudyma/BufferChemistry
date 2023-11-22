@@ -176,7 +176,8 @@ listformat <- list(BR1=df1$BR1,
 ```
 
 ```{r}
-df.bio <- read.csv('../data/2309_allpH_90percentreadidentity_normalized.csv')  %>% column_to_rownames(var='X') %>% select(AN_BR1_4:ML_BR3_8)
+df.bio <- read.csv('../data/2309_normalizedabundancetable_pHbioreps_rarefied_90readidentity.csv')  %>% column_to_rownames(var='X') %>% select(AN_BR1_4:ML_BR3_8)
+
 df.bio <-  df.bio %>% mutate_if(is.numeric, ~ ifelse(. > 0, 1, 0))
 
 df.bio$bb.br1 <- with(df.bio, ifelse(BB_BR1_4 == 1 & BB_BR1_5 == 1 & BB_BR1_6 == 1 & BB_BR1_8 == 1, 1, 0))
@@ -201,8 +202,7 @@ pcoa.tech <-  ggplot(mapping = aes(x, y)) +
   size=6, 
              show.legend = TRUE) +
   labs(title = '',x= pco1.tech, y=pco2.tech) + theme_minimal() +
-  scale_fill_manual(values=set.buffer.chem, name = 'Buffer         ') +
-  #scale_shape_discrete(labels=c("4.5","5.5", "6.5", "7.5")) +
+  scale_fill_manual(values=set.buffer.chem, name = 'Buffer') +
   theme_linedraw(base_size = 16) +
   facet_wrap(~Type, labeller = labeller(Type = c("TR" = "Technical Replicates"))) +
   theme( legend.text = element_text(size =10), legend.title = element_text(size=10, face = 'bold'),
@@ -217,8 +217,7 @@ pcoa.bio <-  ggplot(mapping = aes(x, y)) +
              size=6, 
              show.legend = TRUE) +
   labs(title = '', x= pco1.bio, y=pco2.bio) + theme_minimal() +
-  scale_fill_manual(values=c(set.buffer.chem.bioreps), name = 'Rep (Chem)') + #slateblue
-  #scale_shape_discrete(labels=c("4.5","5.5", "6.5", "7.5")) +
+  scale_fill_manual(values=c(set.buffer.chem.bioreps), name = 'Rep (Chem)') + 
   theme_linedraw(base_size = 16) +
   facet_wrap(~Type, labeller = labeller(Type = c("BR" = "Biological Replicates"))) +
   theme( legend.text = element_text(size =10), legend.title = element_text(size=10, face = 'bold'),
@@ -227,16 +226,15 @@ pcoa.bio <-  ggplot(mapping = aes(x, y)) +
          legend.box="vertical", panel.grid.major = element_line(color = "gray70"),
     panel.grid.minor = element_line(color = "gray70"))
 pcoa.bio
-#ggsave('PCoA_BioReps_Axis1-2.png', pcoa.bio, dpi = 300, width = 6, height =5)
+
 
 pcoa.bio.2 <-  ggplot(mapping = aes(x, y)) +
   geom_point(data=axes.bio, aes(x=Axis.2, y=Axis.3,fill=Buffer), colour = 'black', pch=21, 
              size=6, 
              show.legend = TRUE) +
   labs(title = '', x= pco2.bio, y=pco3.bio) + theme_minimal() +
-  scale_fill_manual(values=c(set.buffer.chem)) + #values=met.brewer("Hokusai3", 6)
+  scale_fill_manual(values=c(set.buffer.chem)) + 
   scale_shape_discrete(name = 'Biological Replicate') +
-  #scale_shape_discrete(labels=c("4.5","5.5", "6.5", "7.5")) +
   facet_wrap(~Type, labeller = labeller(Type = c("BR" = "Biological Replicates"))) +
   theme_linedraw(base_size = 16) +
   theme( legend.text = element_text(size =10), legend.title = element_text(size=10, face = 'bold'),
