@@ -1,0 +1,431 @@
+---
+title: "Untitled"
+author: "Jane Fudyma"
+date: "2023-08-11"
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+library(vegan)
+library(ape)
+library(pairwiseAdonis)
+library(multcompView)
+library(ggvenn)
+library(agricolae)
+library(ComplexUpset)
+library(ggpubr)
+```
+
+
+```{r}
+#define color palletes
+set_current <- c('goldenrod1','darkolivegreen3','chartreuse4', 'darkcyan')
+```
+
+Partition Data for Analysis
+```{r}
+#otu table
+df <- read.table("2309_allpH_90percentreadidentity_normalized.csv", sep=",", header=T)
+
+AN.tech <- select(df, X,AN_TR1_4:AN_TR3_8) %>% column_to_rownames(var = 'X') %>% filter_all(any_vars(. != 0))
+BB.tech <- select(df, X,BB_TR1_4:BB_TR3_8) %>% filter_all(any_vars(. != 0))
+ML.tech <- select(df, X,ML_TR1_4:ML_TR3_8) %>% filter_all(any_vars(. != 0))
+
+#metadata table
+meta <- read.table("SampleMeta.csv", sep=",", header=T)
+
+AN.tech.m <- meta[meta$Site == 'AN' & meta$Rep == 'TR', ]
+BB.tech.m <- meta[meta$Site == 'BB' & meta$Rep == 'TR', ]
+ML.tech.m <- meta[meta$Site == 'ML' & meta$Rep == 'TR', ]
+```
+
+Technical Replicates
+1. Conifer Forest - Angelo
+```{r}
+otu_ang.t <- AN.tech #%>% column_to_rownames(var = "X")
+otu <- t(otu_ang.t)
+otu.xform <- decostand(otu, method="hellinger")
+otu.dist.ang.t <- as.matrix(vegdist(otu.xform, method='bray')) 
+otu.nmds <- metaMDS(otu.dist.ang.t)
+pcoa <- pcoa(as.dist(otu.dist.ang.t))
+axes.ang.t <- as.data.frame(pcoa$vectors)
+axes.ang.t <- cbind(axes.ang.t, AN.tech.m)
+
+eigval.ang.t <- round(pcoa$values$Relative_eig * 100, digits = 2)
+eigval.ang.t <- data.frame( PC = 1:length(eigval.ang.t), Eigval = eigval.ang.t)
+
+pco1.ang.t <- paste("PCo1 (", eigval.ang.t[[1,2]], " %)", sep = "")
+pco2.ang.t <- paste("PCo2 (", eigval.ang.t[[2,2]], " %)", sep = "")
+
+(pcoa_ang_tech <-   ggplot(axes.ang.t, aes(x = Axis.1, y = Axis.2)) +
+  geom_point(aes(fill = as.factor(pH)), pch = 21, color = "black", size = 5, alpha = 0.9, show.legend = FALSE) +
+  labs(title = "Forest", x = pco1.ang.t, y = pco2.ang.t) +
+  theme_linedraw(base_size = 16) +
+  scale_fill_manual(
+    values = set_current,
+    labels = c("4.5", "5.5", "6.5", "7.5"),
+    name = "pH"
+  ) +
+  scale_color_identity() +
+  # scale_shape_manual(
+  #   values = c(24, 22, 21), 
+  #   name = "Replicate"
+  # ) +
+  guides(fill = guide_legend(override.aes = list(color = NULL))) +
+  theme(
+    legend.text = element_text(size = 9),
+    legend.title = element_text(size = 9),
+    axis.text.x = element_text(size = 8),
+    axis.text.y = element_text(size = 8),
+    plot.title = element_text(size = 12, face="bold"),
+    axis.title.x = element_text(size = 10, face="bold"),
+    axis.title.y = element_text(size = 10, face="bold"),
+    panel.grid.major = element_line(color = "gray80"),
+    panel.grid.minor = element_line(color = "gray80")
+  ))
+
+
+```
+2. Wetland Bodega
+```{r}
+otu_bod.t <- BB.tech %>% column_to_rownames(var = "X")
+otu <- t(otu_bod.t)
+otu.xform <- decostand(otu, method="hellinger")
+otu.dist.bod.t <- as.matrix(vegdist(otu.xform, method='bray')) 
+otu.nmds <- metaMDS(otu.dist.bod.t)
+pcoa <- pcoa(as.dist(otu.dist.bod.t))
+axes.bod.t <- as.data.frame(pcoa$vectors)
+axes.bod.t <- cbind(axes.bod.t, BB.tech.m)
+
+eigval.bod.t <- round(pcoa$values$Relative_eig * 100, digits = 2)
+eigval.bod.t <- data.frame( PC = 1:length(eigval.bod.t), Eigval = eigval.bod.t)
+
+pco1.bod.t <- paste("PCo1 (", eigval.bod.t[[1,2]], " %)", sep = "")
+pco2.bod.t <- paste("PCo2 (", eigval.bod.t[[2,2]], " %)", sep = "")
+
+(pcoa_bod_tech <-  ggplot(axes.bod.t, aes(x = Axis.1, y = Axis.2)) +
+  geom_point(aes(fill = as.factor(pH)), color = "black", pch = 21, size = 5, alpha = 0.9, show.legend = FALSE) +
+  labs(title = "Wetland", x = pco1.bod.t, y = pco2.bod.t) +
+  theme_linedraw(base_size = 16) +
+  scale_fill_manual(
+    values = set_current,
+    labels = c("4.5", "5.5", "6.5", "7.5"),
+    name = "pH"
+  ) +
+  scale_color_identity() +
+  # scale_shape_manual(
+  #   values = c(24, 22, 21), # Adjust the shape values as per your needs
+  #   name = "Replicate"
+  # ) +
+  guides(fill = guide_legend(override.aes = list(color = NULL))) +
+  theme(
+    legend.text = element_text(size = 9),
+    legend.title = element_text(size = 9),
+    axis.text.x = element_text(size = 8),
+    axis.text.y = element_text(size = 8),
+    plot.title = element_text(size = 12, face="bold"),
+    axis.title.x = element_text(size = 10, face="bold"),
+    axis.title.y = element_text(size = 10, face="bold"),
+    panel.grid.major = element_line(color = "gray80"),
+    panel.grid.minor = element_line(color = "gray80")
+  ))
+```
+3. Grassland McLaughlin
+```{r}
+otu_mgl.t <- ML.tech %>% column_to_rownames(var = "X")
+otu <- t(otu_mgl.t)
+otu.xform <- decostand(otu, method="hellinger")
+otu.dist.mgl.t <- as.matrix(vegdist(otu.xform, method='bray')) 
+otu.nmds <- metaMDS(otu.dist.mgl.t)
+pcoa <- pcoa(as.dist(otu.dist.mgl.t))
+axes.mgl.t <- as.data.frame(pcoa$vectors)
+axes.mgl.t <- cbind(axes.mgl.t, ML.tech.m)
+
+eigval.mgl.t <- round(pcoa$values$Relative_eig * 100, digits = 2)
+eigval.mgl.t <- data.frame( PC = 1:length(eigval.mgl.t), Eigval = eigval.mgl.t)
+
+pco1.mgl.t <- paste("PCo1 (", eigval.mgl.t[[1,2]], " %)", sep = "")
+pco2.mgl.t <- paste("PCo2 (", eigval.mgl.t[[2,2]], " %)", sep = "")
+
+axes.mgl.t$pH <- as.factor(axes.mgl.t$pH)
+
+(pcoa_mgl_tech <- ggplot(axes.mgl.t, aes(x = Axis.1, y = Axis.2)) +
+  stat_conf_ellipse(data= . %>% filter(pH == 4), aes(x=Axis.1, y=Axis.2, color= "goldenrod1"), alpha = 0, linetype = 'dashed', geom='polygon') +
+  geom_point(aes(fill = as.factor(pH)), pch = 21, color = "black", size = 5, alpha = 0.9, show.legend = TRUE) +
+  labs(title = "Grassland", x = pco1.mgl.t, y = pco2.mgl.t) +
+  theme_linedraw(base_size = 16) +
+  scale_fill_manual(
+    values = set_current,
+    labels = c("4.5", "5.5", "6.5", "7.5"),
+    name = "pH"
+  ) +
+  scale_color_identity() +
+  # scale_shape_manual(
+  #   values = c(24, 22, 21), # Adjust the shape values as per your needs
+  #   name = "Replicate",
+  #   guide = guide_legend(override.aes = list(fill = "black", color = "black"))
+  # ) +
+  guides(fill = guide_legend(override.aes = list(shape = 21, color = 'black'))) +
+  theme(
+    legend.text = element_text(size = 9),
+    legend.title = element_text(size = 10, face = 'bold'),
+    axis.text.x = element_text(size = 8),
+    axis.text.y = element_text(size = 8),
+    plot.title = element_text(size = 12, face="bold"),
+    axis.title.x = element_text(size = 10, face = 'bold'),
+    axis.title.y = element_text(size = 10, face = 'bold'),
+    panel.grid.major = element_line(color = "gray80"),
+    panel.grid.minor = element_line(color = "gray80")
+  ) )
+  
+
+```
+
+1. Alpha diversity
+```{r}
+#calculate alpha diversity
+otu.in <- read.csv('2309_normalizedabundancetable_pHtechreps_rarefied_90%readidentity.csv')
+otu <- t(otu.in%>%column_to_rownames('X')%>% mutate_if(is.numeric, round))
+data_richness <- estimateR(otu)
+
+meta.in <- read.csv('SampleMeta.csv') %>% filter(Rep == 'TR')
+meta.in$pH <- as.character(meta.in$pH)
+
+data_alphadiv <- as.data.frame(cbind(meta.in, t(data_richness)))
+
+data_alphadiv_GL <- filter(data_alphadiv, Site == "ML")
+```
+
+```{r}
+#calculate statistics
+#data is normal - see richness supp figure script for plots and shapiro-wilks test
+
+#ANOVA and Tukey Post-Hoc
+ml.tech.lm <- lm(S.obs ~ pH, data_alphadiv_GL)
+ml.tech.aov <- aov(ml.tech.lm ) 
+summary(ml.tech.aov) #pH is significant
+pairs(emmeans(ml.tech.lm, ~pH)) #4 vs 6 and 4 vs 8 significant
+```
+
+```{r}
+(rich.plot <- ggplot(data_alphadiv_GL, aes(x=pH, y=S.obs, fill=pH)) +
+  geom_line(data = . %>% group_by(Site, pH) %>% summarise(Mean = mean(S.obs)), aes(y = Mean, group = Site), color = "gray", size = 1) +
+  geom_point(aes(fill = pH), pch = 21, alpha = 0.9, size = 3, col = 'black') +
+  labs(x= 'pH', y= 'Grassland Viral Richness') +
+  scale_fill_manual(values= set_current, 
+                     labels=c("4.5","5.5","6.5", "7.5")) +
+  scale_x_discrete(labels=c("4" = "4.5", "5" = "5.5",
+                              "6" = "6.5", "8" = "7.5")) +
+  theme_linedraw() +
+  theme(legend.position = "none", axis.title = element_text(size = 15),
+        axis.text = element_text(size = 10), axis.title.x = element_text(size = 11, face = 'bold'),
+    axis.title.y = element_text(size = 11, face = 'bold')))
+
+(P1 <- rich.plot +
+    geom_line(data=tibble(x=c(1,3), y = c(1873,1873)), aes (x=x, y=y), inherit.aes = FALSE) +
+    geom_line(data=tibble(x=c(1,4), y = c(1890, 1890)), aes (x=x, y=y), inherit.aes = FALSE) +
+    geom_text(data=tibble(x=2, y = c(1875)), aes (x=x, y=y,  label = '*', size = 4), inherit.aes = FALSE, show.legend = FALSE) +
+    geom_text(data=tibble(x=2.5, y = c(1892)), aes (x=x, y=y,  label = '**', size = 4), inherit.aes = FALSE, show.legend = FALSE))
+```
+
+2. Differentially Abundant vOTUs in Grassland
+```{r}
+def <- read.csv('2305_deseq_mgltech_bonferroni.csv') %>% filter(Comparison == c('4_5', '4_6', '4_8'))
+def <- def %>% mutate(Trend = case_when(pH_Enrichment == 4 ~ "Enriched",
+                                        pH_Enrichment == 5 ~ "Depleted",
+                                        pH_Enrichment == 6 ~ "Depleted",
+                                        pH_Enrichment == 8 ~ "Depleted"))
+
+plot_data <- dplyr::count(def, Trend)
+(mgl.diff.ab <- ggplot(plot_data, aes(x=Trend, y=n)) +
+  geom_bar(stat="identity", aes(color= Trend, fill = Trend), alpha = 0.85 , show.legend = FALSE) + theme_classic(base_line_size = .4) + scale_fill_manual(values = c('lightcyan3','goldenrod1')) +
+    scale_color_manual(values = c('lightcyan3','goldenrod1')) + 
+    scale_x_discrete(labels = c('Depleted in \npH 4.5','Enriched in \npH 4.5')) +
+  labs( x='',y='Number of Differentialy        \nAbundant Grassland vOTUs       ') + theme(axis.title = element_text(size = 9, face = 'bold'), axis.text.x = element_text(size = 8, face = 'bold')))
+```
+
+3. pH changes of buffer and soil over time 
+```{r}
+dfyields <- read_csv('220515_pHchangeswithtime.csv')
+dfy.melt <-  reshape2::melt(dfyields, id.vars = c("Sample", "Site", "Site_2", "Treatment"),
+                measure.vars = c("1", "2", "3"), variable.name = "Time", value.name = "pH")
+dfy.melt2 <- dfy.melt%>%drop_na(Sample)
+dfy.melt2$Treatment <- as.factor(dfy.melt2$Treatment)
+dfy.melt2$Site_2 <- factor(dfy.melt2$Site_2, levels=c("Conifer Forest", "Grassland", "Wetland"))
+dfy.melt2 <- dfy.melt2 %>%
+  mutate(Site_2 = str_replace(Site_2, "Conifer Forest", "Forest"))
+
+
+(b <- ggplot(data=dfy.melt2, aes(x=Time, y=pH, group=Sample)) +
+  #labs(tag = 'C') +
+  geom_line(aes(col=Treatment), show.legend = FALSE)+
+  scale_color_manual(values = set_current) +
+  geom_point(aes(fill=Treatment), pch = 21, size=4) + facet_wrap(~Site_2, nrow=1) + 
+  scale_fill_manual(values=set_current, 
+                     labels=c("4.5","5.5","6.5", "7.5")) +
+  theme_linedraw() + scale_x_discrete(labels=c("1" = "Soil pH", "2" = "Buffer Addition",
+                              "3" = "New Soil pH")) +
+  labs(color="Buffer pH") + xlab("") +
+  theme( axis.text.x = element_text(angle = 45, vjust=0.5), text = element_text(size = 13), legend.position="none", 
+        axis.title.x = element_blank()) + ylim(4,8.5))
+```
+
+```{r}
+legend <- get_legend(pcoa_mgl_tech) 
+pcoa_mgl_tech_2 <- pcoa_mgl_tech + theme(legend.position = "none")
+
+(top <- plot_grid(pcoa_ang_tech, pcoa_mgl_tech_2, pcoa_bod_tech, ncol = 3, labels = c("A","","")))
+(top2 <- plot_grid(top, legend, rel_widths = c(5, .5)) + theme(plot.background = element_rect(fill = "white", color = 'white')))
+
+(bottom_left <- plot_grid(P1, mgl.diff.ab, nrow=2, rel_heights = c(3.5, 3.15), labels =  c("B", "C")))
+(bottom <- plot_grid(bottom_left, NULL, b, ncol=3, labels = c("","", "D"), rel_widths = c(2,0.2,3))+ theme(plot.background = element_rect(fill = "white", color = 'white')))
+
+(combined <- plot_grid(top2, bottom, ncol = 1, rel_heights = c(2.5, 4)))
+ggsave('Figure2_TechRepsAll_DeSeqData.png', combined, dpi = 500, width = 11, height = 9)
+```
+
+------
+STATS
+------
+
+1.PERMANOVA - forest, grassland, wetland
+```{r}
+#FOREST
+
+#check assumptions of dispersion
+disp.forest.pH <- betadisper(as.dist(otu.dist.ang.t), as.factor(AN.tech.m$pH))
+permutest(disp.forest.pH, permutations=1000, pairwise = T) #not sig, can proceed
+
+#permanova
+(pmanova.forest.tech = adonis2(as.dist(otu.dist.ang.t) ~ as.factor(pH), data = AN.tech.m)) #NS
+
+
+###
+#Grassland
+
+#check assumptions of dispersion
+disp.grassland.pH <- betadisper(as.dist(otu.dist.mgl.t), as.factor(ML.tech.m$pH))
+permutest(disp.grassland.pH, permutations=1000, pairwise = T) #not sig, can proceed
+
+#permanova
+(pmanova.grassland.tech = adonis2(as.dist(otu.dist.mgl.t) ~ as.factor(pH), data = ML.tech.m)) #pH sig 0.017
+(pairwise.grassland.rep <-pairwise.adonis(otu.dist.mgl.t, as.factor(ML.tech.m[,"pH"]))) 
+
+###
+#Wetland
+
+#check assumptions of dispersion
+disp.wetland.pH <- betadisper(as.dist(otu.dist.bod.t), as.factor(BB.tech.m$pH))
+permutest(disp.wetland.pH, permutations=1000, pairwise = T) #not sig, can proceed
+
+#permanova
+(pmanova.wetland.tech = adonis2(as.dist(otu.dist.bod.t) ~ as.factor(pH), data = BB.tech.m)) 
+```
+
+
+--------------------------------------------------------
+supplementary fig - all soils beta diversity and counts
+--------------------------------------------------------
+```{r}
+#otu table
+df <- read.table("2309_allpH_90percentreadidentity_normalized.csv", sep=",", header=T)
+
+tech.reps <- df %>% select(X, AN_TR1_4:ML_TR3_8)  %>% column_to_rownames(var = 'X') %>%  filter_all(any_vars(. != 0))
+
+#metadata table
+meta <- read.table("SampleMeta.csv", sep=",", header=T)
+
+tech.m <- meta[meta$Rep == 'TR', ]
+```
+
+```{r}
+otu <- t(tech.reps)
+otu.xform <- decostand(otu, method="hellinger")
+otu.dist.tech.b <- as.matrix(vegdist(otu.xform, method='bray')) 
+otu.nmds <- metaMDS(otu.dist.tech.b)
+pcoa <- pcoa(as.dist(otu.dist.tech.b))
+axes.tech.b <- as.data.frame(pcoa$vectors)
+axes.tech.b <- cbind(axes.tech.b, tech.m)
+
+eigval.tech.b <- round(pcoa$values$Relative_eig * 100, digits = 2)
+eigval.tech.b <- data.frame( PC = 1:length(eigval.tech.b), Eigval = eigval.tech.b)
+
+pco1.tech.b <- paste("PCo1 (", eigval.tech.b[[1,2]], " %)", sep = "")
+pco2.tech.b <- paste("PCo2 (", eigval.tech.b[[2,2]], " %)", sep = "")
+
+axes.tech.b$Site <-factor(axes.tech.b$Site, levels=c("AN", "ML", "BB"))
+
+(pcoa_tech <-  ggplot(axes.tech.b, aes(x = Axis.1, y = Axis.2)) +
+  geom_point(aes(fill = Site, color = "black"), size = 6, alpha = 0.9, pch = 21, show.legend = TRUE) +
+  labs(title = '', x = pco1.tech.b, y = pco2.tech.b) +
+  theme_linedraw(base_size = 16) +
+  scale_fill_manual(
+    values = c('darkslateblue', 'burlywood1' ,'cornflowerblue'),
+    labels = c("Forest", "Grassland", 'Wetland')) +
+  scale_color_identity() +
+  guides(fill = guide_legend(override.aes = list(color = NULL))) +
+  theme(
+    legend.text = element_text(size = 8),
+    legend.title = element_text(size = 8, face="bold"),
+    axis.text.x = element_text(size = 8),
+    axis.text.y = element_text(size = 8),
+    plot.title = element_text(size = 10, face="bold"),
+    axis.title.x = element_text(size = 9, face="bold"),
+    axis.title.y = element_text(size = 9, face="bold"),
+    panel.grid.major = element_line(color = "gray80"),
+    panel.grid.minor = element_line(color = "gray80"), 
+    legend.position = 'bottom'
+  ))
+```
+
+```{r}
+df <- read.table("2309_allpH_90percentreadidentity_normalized.csv", sep=",", header=T)
+
+tech.reps <- df %>% select(X, AN_TR1_4:ML_TR3_8)  %>% column_to_rownames(var = 'X') %>%  filter_all(any_vars(. != 0))
+
+df.techreps <- tech.reps
+
+df.techreps <- df.techreps %>%
+  mutate(Forest = ifelse(rowSums(select(., starts_with("AN")) > 0) > 0, 1, 0)) %>% 
+  mutate(Wetland = ifelse(rowSums(select(., starts_with("BB")) > 0) > 0, 1, 0)) %>%
+  mutate(Grassland = ifelse(rowSums(select(., starts_with("ML")) > 0) > 0, 1, 0))
+
+tail(df.techreps)
+
+df.techreps.2 <- df.techreps %>% select(Forest, Wetland, Grassland)
+Soil <- colnames(df.techreps.2)
+
+(upsetobject <- upset(df.techreps.2, Soil, name='Soil', 
+                      base_annotations=list('Intersection size'=(intersection_size(bar_number_threshold=1,  # show all numbers on top of bars
+                                                                                   width=0.8)) + 
+                                              scale_y_continuous(expand=expansion(mult=c(0, 0.08)))),   # reduce width of the bars
+                      queries=list(upset_query(set='Grassland', fill='burlywood1'),
+                                    upset_query(set='Forest', fill='darkslateblue'),
+                                    upset_query(set='Wetland', fill='cornflowerblue')), 
+                      matrix=intersection_matrix(geom=geom_point(shape='circle filled', size=3.5, stroke=0.45)
+  )))
+```
+
+```{r}
+(plot <- plot_grid(pcoa_tech, upsetobject, nrow = 1, labels = c('A','B'), rel_widths = c(1, 1.5)))
+ggsave('Tech_AllSoils_PCoA_Upset_Supplementary.png', plot, dpi = 300, width = 12, height = 6)
+```
+
+1.PERMANOVA - all soils
+```{r}
+#stats
+
+disp.soils <- betadisper(as.dist(otu.dist.tech.b), tech.m$Site)
+permutest(disp.soils, permutations=1000, pairwise = T) #significant - proceed with caution 
+
+disp.pH <- betadisper(as.dist(otu.dist.tech.b), as.factor(tech.m$pH))
+permutest(disp.pH, permutations=1000, pairwise = T) #not sig, can proceed
+
+#permanova
+(pmanova.allsoils = adonis2(as.dist(otu.dist.tech.b) ~ Site+as.factor(pH), data = tech.m))
+(pairwise.site<-pairwise.adonis(otu.dist.tech.b, tech.m[,"Site"])) #all sites significantly diff from each other
+```
+
+
+
