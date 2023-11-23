@@ -1,0 +1,29 @@
+﻿Sample,Buffer,Type,Rep,Yeild
+SM_TR3,Saline Magnesium,TR,TR3,4.71
+SM_TR1,Saline Magnesium,TR,TR1,5.82
+CB_TR3,Carbonated Buffer,TR,TR3,3.89
+CB_TR1,Carbonated Buffer,TR,TR1,3.79
+GL_TR3,Glycine,TR,TR3,5.36
+GL_TR1,Glycine,TR,TR1,5.34
+PB_TR3,PPBS,TR,TR3,2.47
+PB_TR1,PPBS,TR,TR1,3.24
+SM_TR4,Saline Magnesium,TR,TR4,4.83
+SM_TR2,Saline Magnesium,TR,TR2,4.18
+CB_TR4,Carbonated Buffer,TR,TR4,2.72
+CB_TR2,Carbonated Buffer,TR,TR2,2.7
+GL_TR4,Glycine,TR,TR4,3.23
+GL_TR2,Glycine,TR,TR2,4.35
+PB_TR4,PPBS,TR,TR4,5.58
+PB_TR2,PPBS,TR,TR2,3.38
+GL_BR1,Glycine,BR,BR1,0.71
+GL_BR2,Glycine,BR,BR2,1.18
+GL_BR3,Glycine,BR,BR3,3.34
+PB_BR1,PPBS,BR,BR1,3.17
+PB_BR2,PPBS,BR,BR2,1.3
+PB_BR3,PPBS,BR,BR3,5.29
+SM_BR1,Saline Magnesium,BR,BR1,1.4
+SM_BR2,Saline Magnesium,BR,BR2,1.05
+SM_BR3,Saline Magnesium,BR,BR3,4.54
+CB_BR1,Carbonated Buffer,BR,BR1,0.583
+CB_BR2,Carbonated Buffer,BR,BR2,0.87
+CB_BR3,Carbonated Buffer,BR,BR3,1.23

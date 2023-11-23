@@ -1,0 +1,297 @@
+---
+title: 'Supplementary Fig: BioChem Wetland Soil'
+author: "Jane Fudyma"
+date: "2023-10-19"
+---
+
+```{r}
+library(tidyverse)
+library(vegan)
+library(agricolae)
+library(ggpubr)
+library(emmeans)
+library(multcomp)
+library(cowplot)
+library(ggvenn)
+```
+
+
+--------------------
+1. Richness Plots
+--------------------
+```{r}
+all.otu.r <- read.csv('../data/2309_normalizedabundancetable_90percentreadidentity_rarefied.csv') %>% column_to_rownames(var = 'X') %>% mutate_if(is.numeric, round)
+otu <- t(all.otu.r)
+data_richness <- estimateR(otu)
+data_alphadiv <- as.data.frame(cbind(t(data_richness))) 
+
+meta <- read.csv("../data/230321_SampleMeta.csv")
+
+all.m <- meta
+
+adiv <- merge(all.m, data_alphadiv, by.x = "SampleID", by.y = "row.names", all.x = TRUE)
+```
+
+
+```{r}
+#Tech reps - stats - richness
+a.div.tech <- adiv %>% filter(Type == 'TR')
+shapiro.test(a.div.tech$S.obs) #normal distribution
+ggdensity(a.div.tech$S.obs, fill = "lightgray")
+ggqqplot(a.div.tech$S.obs)
+
+tech.mod <- lm(S.obs ~ Buffer, a.div.tech)
+tech.aov <- aov(tech.mod)
+summary(tech.aov) #not significant
+
+```
+
+```{r}
+#tech reps
+  
+(a.div.tech.plot <- ggplot(a.div.tech, aes(x = Buffer, y = S.obs)) + 
+    geom_point(aes(fill=Buffer), color = 'black', pch = 21, size = 4, alpha = 0.9, show.legend = FALSE) +
+    scale_fill_manual(values = c('azure4', '#F99B45', '#63AAC0', '#D95980')) + 
+    labs(x= NULL, y= 'Viral Richness') + theme_linedraw(base_size = 16) + 
+    facet_grid(~Type, labeller = labeller(Type = c("TR" = "Technical Replicates"))))
+```
+
+
+```{r}
+#bio rep stats
+a.div.bio <- adiv %>% filter(Type == 'BR')
+shapiro.test(a.div.bio$S.obs) #non-normally distributed - sorta right skewed - count data
+ggdensity(a.div.bio$S.obs, fill = "lightgray")
+ggqqplot(a.div.bio$S.obs)
+
+#need to use glm for non-normal data because I don't want to transform counts
+a.div.bio$Rep <- as.factor(a.div.bio$Rep) #change to factor for post-hoc tests
+bio.mod <- glm(S.obs ~ Rep + Buffer, a.div.bio, family = "poisson") #good for count data that is right skewed
+summary(bio.mod)
+
+#checking overdispersion - 1.88, between 1-2, moderate overdispersion but not concerning so can proceed 
+bio.mod$deviance/bio.mod$df.residual
+
+anova(bio.mod, test = 'Chisq') #analysis of deviance, rep is significant, buffer is not
+
+#check for levels of significance - testing two methods - they both have similar significance trends
+summary(glht(bio.mod, linfct = mcp(Rep = "Tukey")), test = adjusted("holm")) #BR1 vs 2 and BR1 vs 3 significant
+pairs(emmeans(bio.mod, ~Rep)) #BR1 vs 2 and BR1 vs 3 significant
+```
+
+```{r}
+(a.div.bio.plot <- ggplot(a.div.bio, aes(x = Buffer, y = S.obs)) + 
+    geom_point(aes(fill=Buffer, shape = Rep), col = 'black', size = 4, alpha = 0.9, show.legend = FALSE) +
+    scale_fill_manual(values = c('azure4', '#F99B45', '#63AAC0', '#D95980')) + 
+    scale_shape_manual(values = c(21,22,24)) +
+    labs(x=NULL, y= '') + theme_linedraw(base_size = 16) + 
+    facet_grid(~Type, labeller = labeller(Type = c("BR" = "Biological Replicates"))))
+
+a.div.bio$Rep <- as.character(a.div.bio$Rep) #change back to character for plotting
+(a.div.bio.reps.plot <- ggplot(a.div.bio, aes(x = Rep, y = S.obs)) + 
+    geom_point(aes(fill=Rep), col = 'black', pch = 21, size = 4, alpha = 0.9, show.legend = FALSE) +
+    scale_fill_manual(values = c('aliceblue','lavenderblush3', 'bisque')) + 
+    labs(x=NULL, y= '') + theme_linedraw(base_size = 16) + 
+    facet_grid(~Type, labeller = labeller(Type = c("BR" = "Biological Replicates"))))
+
+(a.div.bio.reps.plot.2 <- a.div.bio.reps.plot +
+    geom_line(data=tibble(x=c(1,3), y = c(2200,2200)), aes (x=x, y=y), inherit.aes = FALSE) +
+    geom_line(data=tibble(x=c(1,2), y = c(2180, 2180)), aes (x=x, y=y), inherit.aes = FALSE) +
+    geom_text(data=tibble(x=2, y = c(2201)), aes (x=x, y=y,  label = '***', size = 4), inherit.aes = FALSE, show.legend = FALSE) +
+    geom_text(data=tibble(x=1.5, y = c(2181)), aes (x=x, y=y,  label = '***', size = 4), inherit.aes = FALSE, show.legend = FALSE))
+```
+
+```{r}
+(alphadiversitycombo <- plot_grid(a.div.tech.plot, a.div.bio.reps.plot.2, a.div.bio.plot, NULL, labels = c('A','B','C'), ncol = 4, rel_widths = c(1,1,1,0.1)))
+```
+
+
+-----------
+2. Yields
+-----------
+```{r}
+df <- read_csv('../data/2307_DNAYeilds.csv')
+df$Buffer2 <- substr(df$Sample, 1,2) 
+dftech <- df %>% filter(Type == 'TR')
+dfbio <- df %>% filter(Type == 'BR')
+```
+
+```{r}
+#Tech reps - yields - stats
+shapiro.test(dftech$Yeild) #normal distribution
+ggdensity(dftech$Yeild)
+
+tech.mod.yield <- lm(Yeild ~ Buffer, dftech)
+tech.aov.yield <- aov(tech.mod.yield)
+summary(tech.aov.yield) #not significant
+```
+
+```{r}
+(yieldplots.tech <- dftech %>% 
+  ggplot(aes(Buffer2, Yeild)) +
+  geom_point(aes(fill = Buffer2), pch = 21, alpha = 0.9, size = 4, col = 'black') +
+  labs(x =NULL, y= "DNA Yield (ng/uL)")  +
+  theme_linedraw() +
+  scale_fill_manual(values = c('azure4', '#F99B45', '#63AAC0', '#D95980'))  + 
+  theme(text = element_text(size = 15),
+        legend.position = "none", panel.grid.major = element_line(color = "gray80"),
+    panel.grid.minor = element_line(color = "gray80")) + scale_y_continuous(labels = function(x) sprintf("%.2f", x)) + 
+  facet_wrap(~Type, labeller = labeller(Type = c("TR" = "Technical Replicates")) ))
+```
+
+```{r}
+#Bio reps - yields - stats
+shapiro.test(dfbio$Yeild) 
+ggdensity(dfbio$Yeild) #not normal, right skewed
+
+#need to use glm for non-normal data because I don't want to transform counts
+dfbio$Rep <- as.factor(dfbio$Rep) #change to factor for post-hoc tests
+dfbio$Buffer <- as.factor(dfbio$Buffer) #change to factor for post-hoc tests
+bio.mod.yield <- glm(Yeild ~ Rep + Buffer, dfbio, family = "Gamma") #good for continous that is right skewed
+summary(bio.mod.yield)
+
+#checking overdispersion - 0.15, no overdispersion
+bio.mod.yield$deviance/bio.mod.yield$df.residual
+
+anova(bio.mod.yield, test = 'Chisq') #analysis of deviance, rep is significant, buffer is not
+
+#check for levels of significance - testing two methods - holm p-adjust says more significane than emmeans tukey, going with more stringent emmeans comparisons
+summary(glht(bio.mod.yield, linfct = mcp(Rep = "Tukey")), test = adjusted("bonferroni")) #BR1 vs 2 and BR1 vs 3 significant
+summary(glht(bio.mod.yield, linfct = mcp(Buffer = "Tukey")), test = adjusted("bonferroni")) #PBS vs CB sig difff
+
+pairs(emmeans(bio.mod.yield, ~Rep)) #2 vs 3 significant
+pairs(emmeans(bio.mod.yield, ~Buffer)) # nothing is significant
+
+
+```
+```{r}
+(yieldplots.bio.1 <- dfbio %>% 
+  ggplot(aes(Buffer2, Yeild)) +
+  geom_point(aes(fill = Buffer2, shape = Rep), alpha = 0.9, size = 4, col = 'black') +
+  labs(x =NULL, y= '')  +
+  theme_linedraw() +
+  scale_fill_manual(values = c('azure4', '#F99B45', '#63AAC0', '#D95980'))  + 
+  scale_shape_manual(values = c(21,22,24)) +
+  theme(text = element_text(size = 15), 
+        legend.position = "none", panel.grid.major = element_line(color = "gray80"),
+    panel.grid.minor = element_line(color = "gray80")) + scale_y_continuous(labels = function(x) sprintf("%.2f", x)) + 
+  facet_wrap(~Type, labeller = labeller(Type = c("BR" = "Biological Replicates")) ))
+
+
+(yieldplots.bio.2 <- dfbio %>% 
+  ggplot(aes(Rep, Yeild)) +
+  geom_point(aes(fill = Rep), pch = 21, alpha = 0.9, size = 4, col = 'black') +
+  labs(x =NULL, y= '')  +
+  theme_linedraw() +
+  scale_fill_manual(values = c('aliceblue','lavenderblush3', 'bisque'))  + 
+  theme(text = element_text(size = 15), 
+        legend.position = "none", panel.grid.major = element_line(color = "gray80"),
+    panel.grid.minor = element_line(color = "gray80")) + scale_y_continuous(labels = function(x) sprintf("%.2f", x)) + 
+  facet_wrap(~Type, labeller = labeller(Type = c("BR" = "Biological Replicates")) ))
+
+(yieldplots.bio.2.2 <- yieldplots.bio.2 +
+    geom_line(data=tibble(x=c(2,3), y = c(6,6)), aes (x=x, y=y), inherit.aes = FALSE) +
+    geom_text(data=tibble(x=2.5, y = c(6.2)), aes (x=x, y=y,  label = '*', size = 4), inherit.aes = FALSE, show.legend = FALSE)
+    )
+
+(yieldplotstogether <- plot_grid(yieldplots.tech, yieldplots.bio.2.2, yieldplots.bio.1, ncol=3, labels = c('D','E', 'F')))
+```
+
+-------------------
+3. Venn Diagrams
+-------------------
+
+```{r}
+#rarefied data
+df <- read.table("../data/2309_normalizedabundancetable_90percentreadidentity_rarefied.csv", sep=",", header=T, row.names=1)
+df <- df %>% mutate_if(is.numeric, ~1 * (. > 0)) 
+
+#select votus that are present in every sample
+df$CB <- with(df, ifelse(CB_TR1 == 1 & CB_TR2 == 1 & CB_TR3 == 1 & CB_TR4 == 1, 1, 0))
+df$GL <- with(df, ifelse(GL_TR1 == 1 & GL_TR2 == 1 & GL_TR3 == 1 & GL_TR4 == 1, 1, 0))
+df$PB <- with(df, ifelse(PB_TR1 == 1 & PB_TR2 == 1 & PB_TR3 == 1 & PB_TR4 == 1, 1, 0))
+df$SM <- with(df, ifelse(SM_TR1 == 1 & SM_TR2 == 1 & SM_TR3 == 1 & SM_TR4 == 1, 1, 0))
+
+df1 <- df %>% select(CB:SM)
+
+df1$CB[df1$CB > 0] <- (rownames(df1)[df1$CB > 0])
+df1$GL[df1$GL > 0] <- (rownames(df1)[df1$GL > 0])
+df1$PB[df1$PB > 0] <- (rownames(df1)[df1$PB > 0])
+df1$SM[df1$SM > 0] <- (rownames(df1)[df1$SM > 0])
+
+df1 <- df1 %>% mutate(across(everything(), ~ifelse(. %in% c("0"), NA, .)))
+
+listformat <- list(CB=df1$CB,
+              GL=df1$GL,
+              PB=df1$PB,
+              SM=df1$SM
+          )
+
+(vent.tech <- ggvenn(listformat, fill_color = c('azure4', '#F99B45', '#63AAC0', '#D95980'), stroke_size = 0.5, text_size = 4, set_name_size = 0, show_percentage = FALSE ))
+
+
+#select votus that are present in every sample
+df$CB <- with(df, ifelse(CB_BR1 == 1 & CB_BR2 == 1 & CB_BR3 == 1, 1, 0))
+df$GL <- with(df, ifelse(GL_BR1 == 1 & GL_BR2 == 1 & GL_BR3 == 1, 1, 0 ))
+df$PB <- with(df, ifelse(PB_BR1 == 1 & PB_BR2 == 1 & PB_BR3 == 1, 1, 0 ))
+df$SM <- with(df, ifelse(SM_BR1 == 1 & SM_BR2 == 1 & SM_BR3 == 1, 1, 0 ))
+
+df1 <- df %>% select(CB:SM)
+
+df1$CB[df1$CB > 0] <- (rownames(df1)[df1$CB > 0])
+df1$GL[df1$GL > 0] <- (rownames(df1)[df1$GL > 0])
+df1$PB[df1$PB > 0] <- (rownames(df1)[df1$PB > 0])
+df1$SM[df1$SM > 0] <- (rownames(df1)[df1$SM > 0])
+
+df1 <- df1 %>% mutate(across(everything(), ~ifelse(. %in% c("0"), NA, .)))
+
+listformat <- list(CB=df1$CB,
+              GL=df1$GL,
+              PB=df1$PB,
+              SM=df1$SM
+          )
+
+
+(vent.bio <- ggvenn(listformat, fill_color = c('azure4', '#F99B45', '#63AAC0', '#D95980'), stroke_size = 0.5, text_size = 4, set_name_size = 0, show_percentage = FALSE ))
+
+
+#select votus that are present in every sample
+df$BR1 <- with(df, ifelse(CB_BR1 == 1 & GL_BR1 == 1 & PB_BR1 == 1 & SM_BR1 == 1, 1, 0))
+df$BR2 <- with(df, ifelse(CB_BR2 == 1 & GL_BR2 == 1 & PB_BR2 == 1 & SM_BR2 == 1, 1, 0))
+df$BR3 <- with(df, ifelse(CB_BR3 == 1 & GL_BR3 == 1 & PB_BR3 == 1 & SM_BR3 == 1, 1, 0))
+
+df1 <- df %>% select(BR1:BR3)
+
+df1$BR1[df1$BR1 > 0] <- (rownames(df1)[df1$BR1 > 0])
+df1$BR2[df1$BR2 > 0] <- (rownames(df1)[df1$BR2 > 0])
+df1$BR3[df1$BR3 > 0] <- (rownames(df1)[df1$BR3 > 0])
+
+df1 <- df1 %>% mutate(across(everything(), ~ifelse(. %in% c("0"), NA, .)))
+
+listformat <- list(BR1=df1$BR1,
+              BR2=df1$BR2,
+              BR3=df1$BR3
+          )
+
+(vent.bioreps <- ggvenn(listformat, fill_color = c('aliceblue','lavenderblush3', 'bisque'), stroke_size = 0.5, text_size = 4, set_name_size = 0, show_percentage = FALSE ))
+
+(vents <- plot_grid(vent.tech, vent.bioreps, vent.bio, labels = c('G','H','I'), nrow = 1))
+```
+
+
+```{r}
+(p1 <- yieldplots.tech + theme(legend.position = 'bottom', legend.title = element_text(face = 'bold', size = 12)) + labs(fill = 'Buffer')) 
+(p2 <- yieldplots.bio.2 + theme(legend.position = 'bottom', legend.title = element_text(face = 'bold', size = 12)) + labs(fill = 'Replicate')) 
+
+legend1 <- get_legend(p1)
+legend2 <- get_legend(p2)
+
+(legends <- plot_grid(legend1, NULL, legend2, ncol = 3, rel_widths = c(1, -.2, 1)))
+
+
+(suppplot <- plot_grid(alphadiversitycombo, yieldplotstogether, vents, NULL, legends, ncol = 1, rel_heights = c(1,1,1, -.07, .2)) + theme(plot.background = element_rect(fill = "white", color = 'white')))
+ggsave('BuffChem_SuppPlot.png', suppplot, dpi = 400, width = 9, height = 12)
+```
+
+
+
