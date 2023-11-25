@@ -1,0 +1,356 @@
+---
+title: "DeSeq for Technical Replicates pH experiment"
+author: "Jane Fudyma"
+date: "2023-08-11"
+---
+
+
+```{r}
+library(dplyr)
+library(DESeq2)
+library(tidyverse)
+library(biobroom)
+library(cowplot)
+```
+
+
+```{r}
+#upload count and abundance table
+otu.cnt <- read.table("../data/2309.allpH.90%.vib.bt2.covm.count.tsv", sep = "\t", header = T, row.names = "Contig")
+otu.abd <- read_csv("../data/2309_allpH_90percentreadidentity_normalized.csv") %>% column_to_rownames('...1')
+
+#turn abundance table into logical for multiplication (if value non-zero, TRUE)
+otu.abd <- otu.abd %>% mutate_if(is.numeric,as.logical)
+
+#ensure contig row.name order is in correct order
+otu.abd <- otu.abd[match(rownames(otu.cnt), rownames(otu.abd)),]
+
+#ensure colnames in correct order
+otu.abd <- otu.abd[, match(colnames(otu.cnt), colnames(otu.abd))]
+
+#multiply abundance by count table, gets rid of all values in count table that
+#may not be in the 75 threshold abundance table 
+otu.cnt.75 <- otu.cnt * otu.abd
+
+#load metadata and re-order 75 filtered counts by metadata order
+met.dat <- read.table("../data/SampleMeta.csv", sep = ",", header = T)
+col_names <- names(met.dat)
+met.dat[,col_names] <- lapply(met.dat[,col_names] , factor) #change everything to factors
+
+
+otu.cnt.75 <- otu.cnt.75[, match(met.dat$ID, colnames(otu.cnt.75))]
+rownames(met.dat) <- met.dat$ID #set rownames to be the ID column - check won't work if they are not set
+otu.cnt.75.1 <- otu.cnt.75[rowSums(otu.cnt.75)>0, ] #remove rows that have been eliminated in matrix multiplication
+
+all(rownames(met.dat) == colnames(otu.cnt.75.1)) #check to ensure correct order
+
+```
+
+```{r}
+otu.ang <- select(otu.cnt.75.1, c(1:24)) #select Angelo data all
+otu.ang.t <- select(otu.cnt.75.1, c(13:24))
+otu.ang.t <- otu.ang.t[rowSums(otu.ang.t)>0, ] #get rid of all rows with zeros (from other samples)
+
+otu.bod <- select(otu.cnt.75.1, c(25:48))
+otu.bod.t <- select(otu.cnt.75.1, c(25:36))
+otu.bod.t <- otu.bod.t[rowSums(otu.bod.t)>0, ] #get rid of all rows with zeros (from other samples)
+
+otu.mgl <- select(otu.cnt.75.1, c(49:72))
+otu.mgl.t <- select(otu.cnt.75.1, c(61:72))
+otu.mgl.t <- otu.mgl.t[rowSums(otu.mgl.t)>0, ]  #get rid of all rows with zeros (from other samples)
+
+#get metadata
+met.ang.t <- met.dat[met.dat$Site_Rep == 'AN_TR', ]
+met.bod.t <- met.dat[met.dat$Site_Rep == 'BB_TR', ]
+met.mgl.t <- met.dat[met.dat$Site_Rep == 'ML_TR', ]
+
+#ensure that data and metadata are in the same order for comparisons
+otu.ang.t <- otu.ang.t[, match(rownames(met.ang.t), colnames(otu.ang.t))]
+otu.bod.t <- otu.bod.t[, match(rownames(met.bod.t), colnames(otu.bod.t))]
+otu.mgl.t <- otu.mgl.t[, match(rownames(met.mgl.t), colnames(otu.mgl.t))]
+```
+
+1.Forest
+```{r}
+#run deseq objects 
+dds.a.t <-  DESeqDataSetFromMatrix(countData = otu.ang.t,colData = met.ang.t,design = ~ pH)
+dds.a.t <- DESeq(dds.a.t)
+```
+
+
+```{r}
+#compare two sets of data and add all metadata to these comparisons 
+res.a.t.pH45 <- tidy(DESeq2::results(dds.a.t, contrast=c("pH","4","5"))) %>% 
+  dplyr::rename("OTU_ID" = "gene") %>% 
+  mutate(Sig = ifelse(p.adjusted > 0.05, "NS", "S")) %>% 
+  mutate(pH_Enrichment = case_when(p.adjusted < 0.05 & estimate > 0 ~ "4",
+                                   p.adjusted < 0.05 & estimate < 0 ~ "5",
+                                   p.adjusted >= 0.05 ~ "NS")) %>% 
+  add_column(Comparison = "4_5", Site = "Angelo", Type = "Tech")
+
+
+res.a.t.pH46 <- tidy(DESeq2::results(dds.a.t, contrast=c("pH","4","6"))) %>% 
+  dplyr::rename("OTU_ID" = "gene") %>% 
+  mutate(Sig = ifelse(p.adjusted > 0.05, "NS", "S"))  %>% 
+  mutate(pH_Enrichment = case_when(p.adjusted < 0.05 & estimate > 0 ~ "4",
+                                   p.adjusted < 0.05 & estimate < 0 ~ "6",
+                                   p.adjusted >= 0.05 ~ "NS")) %>% 
+  add_column(Comparison = "4_6", Site = "Angelo", Type = "Tech")
+
+
+res.a.t.pH48 <- tidy(DESeq2::results(dds.a.t, contrast=c("pH","4","8"))) %>% 
+  dplyr::rename("OTU_ID" = "gene") %>% 
+  mutate(Sig = ifelse(p.adjusted > 0.05, "NS", "S"))  %>% 
+  mutate(pH_Enrichment = case_when(p.adjusted < 0.05 & estimate > 0 ~ "4",
+                                   p.adjusted < 0.05 & estimate < 0 ~ "8",
+                                   p.adjusted >= 0.05 ~ "NS")) %>% 
+  add_column(Comparison = "4_8", Site = "Angelo", Type = "Tech")
+
+
+res.a.t.pH56 <- tidy(DESeq2::results(dds.a.t, contrast=c("pH","5","6"))) %>% 
+  dplyr::rename("OTU_ID" = "gene") %>% 
+  mutate(Sig = ifelse(p.adjusted > 0.05, "NS", "S"))  %>% 
+  mutate(pH_Enrichment = case_when(p.adjusted < 0.05 & estimate > 0 ~ "5",
+                                   p.adjusted < 0.05 & estimate < 0 ~ "6",
+                                   p.adjusted >= 0.05 ~ "NS")) %>% 
+  add_column(Comparison = "5_6", Site = "Angelo", Type = "Tech")
+
+
+res.a.t.pH58 <- tidy(DESeq2::results(dds.a.t, contrast=c("pH","5","8"))) %>% 
+  dplyr::rename("OTU_ID" = "gene") %>% 
+  mutate(Sig = ifelse(p.adjusted > 0.05, "NS", "S"))  %>% 
+  mutate(pH_Enrichment = case_when(p.adjusted < 0.05 & estimate > 0 ~ "5",
+                                   p.adjusted < 0.05 & estimate < 0 ~ "8",
+                                   p.adjusted >= 0.05 ~ "NS")) %>% 
+  add_column(Comparison = "5_8", Site = "Angelo", Type = "Tech")
+
+
+res.a.t.pH68 <- tidy(DESeq2::results(dds.a.t, contrast=c("pH","6","8"))) %>% 
+  dplyr::rename("OTU_ID" = "gene") %>% 
+  mutate(Sig = ifelse(p.adjusted > 0.05, "NS", "S"))  %>% 
+  mutate(pH_Enrichment = case_when(p.adjusted < 0.05 & estimate > 0 ~ "6",
+                                   p.adjusted < 0.05 & estimate < 0 ~ "8",
+                                   p.adjusted >= 0.05 ~ "NS")) %>% 
+  add_column(Comparison = "6_8", Site = "Angelo", Type = "Tech")
+
+
+ang <- rbind(res.a.t.pH45, res.a.t.pH46, res.a.t.pH48, res.a.t.pH56, res.a.t.pH58, res.a.t.pH68)
+```
+
+
+2. Wetland
+```{r}
+#run deseq
+dds.b.t <-  DESeqDataSetFromMatrix(countData = otu.bod.t,colData = met.bod.t,design = ~ pH)
+dds.b.t <- DESeq(dds.b.t)
+```
+
+```{r}
+res.b.t.pH45 <- tidy(DESeq2::results(dds.b.t, contrast=c("pH","4","5"))) %>% 
+  dplyr::rename("OTU_ID" = "gene") %>% 
+  mutate(Sig = ifelse(p.adjusted > 0.05, "NS", "S")) %>% 
+  mutate(pH_Enrichment = case_when(p.adjusted < 0.05 & estimate > 0 ~ "4",
+                                   p.adjusted < 0.05 & estimate < 0 ~ "5",
+                                   p.adjusted >= 0.05 ~ "NS")) %>% 
+  add_column(Comparison = "4_5", Site = "Bodega", Type = "Tech")
+
+
+res.b.t.pH46 <- tidy(DESeq2::results(dds.b.t, contrast=c("pH","4","6"))) %>% 
+  dplyr::rename("OTU_ID" = "gene") %>% 
+  mutate(Sig = ifelse(p.adjusted > 0.05, "NS", "S"))  %>% 
+  mutate(pH_Enrichment = case_when(p.adjusted < 0.05 & estimate > 0 ~ "4",
+                                   p.adjusted < 0.05 & estimate < 0 ~ "6",
+                                   p.adjusted >= 0.05 ~ "NS")) %>% 
+  add_column(Comparison = "4_6", Site = "Bodega", Type = "Tech")
+
+
+res.b.t.pH48 <- tidy(DESeq2::results(dds.b.t, contrast=c("pH","4","8"))) %>% 
+  dplyr::rename("OTU_ID" = "gene") %>% 
+  mutate(Sig = ifelse(p.adjusted > 0.05, "NS", "S"))  %>% 
+  mutate(pH_Enrichment = case_when(p.adjusted < 0.05 & estimate > 0 ~ "4",
+                                   p.adjusted < 0.05 & estimate < 0 ~ "8",
+                                   p.adjusted >= 0.05 ~ "NS")) %>% 
+  add_column(Comparison = "4_8", Site = "Bodega", Type = "Tech")
+
+
+res.b.t.pH56 <- tidy(DESeq2::results(dds.b.t, contrast=c("pH","5","6"))) %>% 
+  dplyr::rename("OTU_ID" = "gene") %>% 
+  mutate(Sig = ifelse(p.adjusted > 0.05, "NS", "S"))  %>% 
+  mutate(pH_Enrichment = case_when(p.adjusted < 0.05 & estimate > 0 ~ "5",
+                                   p.adjusted < 0.05 & estimate < 0 ~ "6",
+                                   p.adjusted >= 0.05 ~ "NS")) %>% 
+  add_column(Comparison = "5_6", Site = "Bodega", Type = "Tech")
+
+
+res.b.t.pH58 <- tidy(DESeq2::results(dds.b.t, contrast=c("pH","5","8"))) %>% 
+  dplyr::rename("OTU_ID" = "gene") %>% 
+  mutate(Sig = ifelse(p.adjusted > 0.05, "NS", "S"))  %>% 
+  mutate(pH_Enrichment = case_when(p.adjusted < 0.05 & estimate > 0 ~ "5",
+                                   p.adjusted < 0.05 & estimate < 0 ~ "8",
+                                   p.adjusted >= 0.05 ~ "NS")) %>% 
+  add_column(Comparison = "5_8", Site = "Bodega", Type = "Tech")
+
+
+res.b.t.pH68 <- tidy(DESeq2::results(dds.b.t, contrast=c("pH","6","8"))) %>% 
+  dplyr::rename("OTU_ID" = "gene") %>% 
+  mutate(Sig = ifelse(p.adjusted > 0.05, "NS", "S"))  %>% 
+  mutate(pH_Enrichment = case_when(p.adjusted < 0.05 & estimate > 0 ~ "6",
+                                   p.adjusted < 0.05 & estimate < 0 ~ "8",
+                                   p.adjusted >= 0.05 ~ "NS")) %>% 
+  add_column(Comparison = "6_8", Site = "Bodega", Type = "Tech")
+
+bod <- rbind(res.b.t.pH45, res.b.t.pH46, res.b.t.pH48, res.b.t.pH56, res.b.t.pH58, res.b.t.pH68)
+```
+
+3.Grassland
+```{r}
+dds.m.t <-  DESeqDataSetFromMatrix(countData = otu.mgl.t,colData = met.mgl.t,design = ~ pH)
+dds.m.t <- DESeq(dds.m.t)
+```
+
+```{r}
+res.m.t.pH45 <- tidy(DESeq2::results(dds.m.t, contrast=c("pH","4","5"))) %>% 
+  dplyr::rename("OTU_ID" = "gene") %>% 
+  mutate(Sig = ifelse(p.adjusted > 0.05, "NS", "S")) %>% 
+  mutate(pH_Enrichment = case_when(p.adjusted < 0.05 & estimate > 0 ~ "4",
+                                   p.adjusted < 0.05 & estimate < 0 ~ "5",
+                                   p.adjusted >= 0.05 ~ "NS")) %>% 
+  add_column(Comparison = "4_5", Site = "McLaughlin", Type = "Tech")
+
+
+res.m.t.pH46 <- tidy(DESeq2::results(dds.m.t, contrast=c("pH","4","6"))) %>% 
+  dplyr::rename("OTU_ID" = "gene") %>% 
+  mutate(Sig = ifelse(p.adjusted > 0.05, "NS", "S"))  %>% 
+  mutate(pH_Enrichment = case_when(p.adjusted < 0.05 & estimate > 0 ~ "4",
+                                   p.adjusted < 0.05 & estimate < 0 ~ "6",
+                                   p.adjusted >= 0.05 ~ "NS")) %>% 
+  add_column(Comparison = "4_6", Site = "McLaughlin", Type = "Tech")
+
+
+res.m.t.pH48 <- tidy(DESeq2::results(dds.m.t, contrast=c("pH","4","8"))) %>% 
+  dplyr::rename("OTU_ID" = "gene") %>% 
+  mutate(Sig = ifelse(p.adjusted > 0.05, "NS", "S"))  %>% 
+  mutate(pH_Enrichment = case_when(p.adjusted < 0.05 & estimate > 0 ~ "4",
+                                   p.adjusted < 0.05 & estimate < 0 ~ "8",
+                                   p.adjusted >= 0.05 ~ "NS")) %>% 
+  add_column(Comparison = "4_8", Site = "McLaughlin", Type = "Tech")
+
+
+res.m.t.pH56 <- tidy(DESeq2::results(dds.m.t, contrast=c("pH","5","6"))) %>% 
+  dplyr::rename("OTU_ID" = "gene") %>% 
+  mutate(Sig = ifelse(p.adjusted > 0.05, "NS", "S"))  %>% 
+  mutate(pH_Enrichment = case_when(p.adjusted < 0.05 & estimate > 0 ~ "5",
+                                   p.adjusted < 0.05 & estimate < 0 ~ "6",
+                                   p.adjusted >= 0.05 ~ "NS")) %>% 
+  add_column(Comparison = "5_6", Site = "McLaughlin", Type = "Tech")
+
+
+res.m.t.pH58 <- tidy(DESeq2::results(dds.m.t, contrast=c("pH","5","8"))) %>% 
+  dplyr::rename("OTU_ID" = "gene") %>% 
+  mutate(Sig = ifelse(p.adjusted > 0.05, "NS", "S"))  %>% 
+  mutate(pH_Enrichment = case_when(p.adjusted < 0.05 & estimate > 0 ~ "5",
+                                   p.adjusted < 0.05 & estimate < 0 ~ "8",
+                                   p.adjusted >= 0.05 ~ "NS")) %>% 
+  add_column(Comparison = "5_8", Site = "McLaughlin", Type = "Tech")
+
+
+res.m.t.pH68 <- tidy(DESeq2::results(dds.m.t, contrast=c("pH","6","8"))) %>% 
+  dplyr::rename("OTU_ID" = "gene") %>% 
+  mutate(Sig = ifelse(p.adjusted > 0.05, "NS", "S"))  %>% 
+  mutate(pH_Enrichment = case_when(p.adjusted < 0.05 & estimate > 0 ~ "6",
+                                   p.adjusted < 0.05 & estimate < 0 ~ "8",
+                                   p.adjusted >= 0.05 ~ "NS")) %>% 
+  add_column(Comparison = "6_8", Site = "McLaughlin", Type = "Tech")
+
+mgl <- rbind(res.m.t.pH45, res.m.t.pH46, res.m.t.pH48, res.m.t.pH56, res.m.t.pH58, res.m.t.pH68)
+```
+
+
+---Pvalueadjusting----------
+
+```{r}
+mgltech <- mgl %>% drop_na(p.value)
+mgltech$bonferroni <- p.adjust(mgltech$p.value, method = 'bonferroni')
+mtbon <- filter(mgltech, bonferroni < 0.05)
+
+#write.csv(mtbon, '2305_deseq_mgltech_bonferroni_90%.csv')
+
+angtech <- ang %>% drop_na(p.value)
+angtech$bonferroni <- p.adjust(angtech$p.value, method = 'bonferroni')
+atbon <- filter(angtech, bonferroni < 0.05)
+
+#write.csv(atbon, '2305_deseq_angtech_bonferroni_90%.csv')
+
+bodtech <- bod %>% drop_na(p.value)
+bodtech$bonferroni <- p.adjust(bodtech$p.value, method = 'bonferroni')
+btbon <- filter(bodtech, bonferroni < 0.05)
+
+#write.csv(btbon, '2305_deseq_bodtech_bonferroni_90%.csv')
+```
+
+
+------pH4enriched/depleted plot
+
+```{r}
+def <- mtbon %>% filter(Comparison == c('4_5', '4_6', '4_8'))
+def <- def %>% mutate(Trend = case_when(pH_Enrichment == 4 ~ "Enriched",
+                                        pH_Enrichment == 5 ~ "Depleted",
+                                        pH_Enrichment == 6 ~ "Depleted",
+                                        pH_Enrichment == 8 ~ "Depleted"))
+
+plot_data <- dplyr::count(def, Trend)
+(mgl.diff.ab <- ggplot(plot_data, aes(x=Trend, y=n)) +
+  geom_bar(stat="identity", aes(fill = Trend), show.legend = FALSE) + theme_minimal() +
+    scale_fill_manual(values = c('lightcyan3','goldenrod1')) +
+    scale_color_manual(values = c('lightcyan3','goldenrod1')) + 
+    scale_x_discrete(labels = c('Depleted in \npH 4.5','Enriched in \npH 4.5')) +
+     ylim(0,160) +
+    #geom_text(aes(label=n)) +
+  labs(title = 'Grassland', x='',y='Number of Differentially \nAbundant vOTUs'))
+
+
+def.ang <- atbon %>% filter(Comparison == c('4_5', '4_6', '4_8'))
+def.ang <- def.ang %>% mutate(Trend = case_when(pH_Enrichment == 4 ~ "Enriched",
+                                        pH_Enrichment == 5 ~ "Depleted",
+                                        pH_Enrichment == 6 ~ "Depleted",
+                                        pH_Enrichment == 8 ~ "Depleted"))
+
+plot_data <- dplyr::count(def.ang, Trend)
+(ang.diff.ab <- ggplot(plot_data, aes(x=Trend, y=n)) +
+  geom_bar(stat="identity", aes(fill = Trend), show.legend = FALSE) + theme_minimal() +    
+    scale_fill_manual(values = c('lightcyan3','goldenrod1')) +
+    scale_color_manual(values = c('lightcyan3','goldenrod1')) + 
+    scale_x_discrete(labels = c('Depleted in \npH 4.5','Enriched in \npH 4.5')) + 
+    ylim(0,160) + #geom_text(aes(label=n)) +
+  labs(title = 'Forest', x='',y='Number of Differentially \nAbundant vOTUs') )
+
+def.bod <- btbon %>% filter(Comparison == c('4_5', '4_6', '4_8'))
+def.bod <- def.bod %>% mutate(Trend = case_when(pH_Enrichment == 4 ~ "Enriched",
+                                        pH_Enrichment == 5 ~ "Depleted",
+                                        pH_Enrichment == 6 ~ "Depleted",
+                                        pH_Enrichment == 8 ~ "Depleted"))
+
+plot_data <- dplyr::count(def.bod, Trend)
+(bod.diff.ab <- ggplot(plot_data, aes(x=Trend, y=n)) +
+  geom_bar(stat="identity", aes(fill = Trend), show.legend = FALSE) + theme_minimal() +    
+    scale_fill_manual(values = c('lightcyan3','goldenrod1')) +
+    scale_color_manual(values = c('lightcyan3','goldenrod1')) + 
+    scale_x_discrete(labels = c('Depleted in \npH 4.5','Enriched in \npH 4.5')) +
+     ylim(0,160) + #geom_text(aes(label=n)) +
+  labs(title = 'Wetland', x='',y='Number of Differentially \nAbundant vOTUs') )
+
+(diff.ab.together <- plot_grid(ang.diff.ab,mgl.diff.ab,  bod.diff.ab, ncol = 3, labels = c('A','B','C')))
+
+ggsave('DeSeqBarChart_pH4vsOthersComparison.png', diff.ab.together, dpi = 300, width = 10, height = 5)
+```
+
+
+
+
+
+
+
+
+
+
+
