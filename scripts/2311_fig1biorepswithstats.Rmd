@@ -24,12 +24,12 @@ library(pairwiseAdonis)
 
 ```{r}
 #otu table
-df <- read.table("2309_allpH_90percentreadidentity_normalized.csv", sep=",", header=T)
+df <- read.table("../data/2309_allpH_90percentreadidentity_normalized.csv", sep=",", header=T)
 
 bio.reps <- df %>% select(X, AN_BR1_4:ML_BR3_8)  %>% column_to_rownames(var = 'X') %>%  filter_all(any_vars(. != 0))
 
 #metadata table
-meta <- read.table("SampleMeta.csv", sep=",", header=T)
+meta <- read.table("../data/SampleMeta.csv", sep=",", header=T)
 
 bio.m <- meta[meta$Rep == 'BR', ]
 ```
@@ -69,14 +69,14 @@ axes.bio.b$Site <-factor(axes.bio.b$Site, levels=c("AN", "ML", "BB"))
     plot.title = element_text(size = 10, face="bold"),
     axis.title.x = element_text(size = 9, face="bold"),
     axis.title.y = element_text(size = 9, face="bold"),
-    panel.grid.major = element_line(color = "gray80"),
-    panel.grid.minor = element_line(color = "gray80"), 
+    panel.grid.major = element_line(color = "gray92"),
+    panel.grid.minor = element_line(color = "gray92"), 
     legend.position = 'bottom'
   ))
 ```
 
 ```{r}
-df <- read.table("2309_allpH_90percentreadidentity_normalized.csv", sep=",", header=T)
+df <- read.table("../data/2309_allpH_90percentreadidentity_normalized.csv", sep=",", header=T)
 
 bio.reps <- df %>% select(X, AN_BR1_4:ML_BR3_8)  %>% column_to_rownames(var = 'X') %>%  filter_all(any_vars(. != 0))
 
@@ -105,7 +105,7 @@ Soil <- colnames(df.bioreps.2)
 Partition Data for Analysis
 ```{r}
 #otu table
-df <- read.table("2309_allpH_90percentreadidentity_normalized.csv", sep=",", header=T)
+df <- read.table("../data/2309_allpH_90percentreadidentity_normalized.csv", sep=",", header=T)
 
 AN.bio <- select(df, X,AN_BR1_4:AN_BR3_8) %>% column_to_rownames(var = 'X') %>%  filter_all(any_vars(. != 0))
 BB.bio <- select(df, X,BB_BR1_4:BB_BR3_8) %>% filter_all(any_vars(. != 0))
@@ -113,7 +113,7 @@ ML.bio <- select(df, X,ML_BR1_4:ML_BR3_8) %>% filter_all(any_vars(. != 0))
 
 
 #metadata table
-meta <- read.table("SampleMeta.csv", sep=",", header=T)
+meta <- read.table("../data/SampleMeta.csv", sep=",", header=T)
 
 AN.bio.m <- meta[meta$Site == 'AN' & meta$Rep == 'BR', ]
 BB.bio.m <- meta[meta$Site == 'BB' & meta$Rep == 'BR', ]
@@ -165,8 +165,8 @@ pco2.ang.b <- paste("PCo2 (", eigval.ang.b[[2,2]], " %)", sep = "")
     plot.title = element_text(size = 10, face="bold"),
     axis.title.x = element_text(size = 9, face="bold"),
     axis.title.y = element_text(size = 9, face="bold"),
-    panel.grid.major = element_line(color = "gray80"),
-    panel.grid.minor = element_line(color = "gray80")
+    panel.grid.major = element_line(color = "gray92"),
+    panel.grid.minor = element_line(color = "gray92")
   ))
 ```
 2. Wetland - Bodega
@@ -210,8 +210,8 @@ pco2.bod.b <- paste("PCo2 (", eigval.bod.b[[2,2]], " %)", sep = "")
     plot.title = element_text(size = 10, face="bold"),
     axis.title.x = element_text(size = 9, face="bold"),
     axis.title.y = element_text(size = 9, face="bold"),
-    panel.grid.major = element_line(color = "gray80"),
-    panel.grid.minor = element_line(color = "gray80")
+    panel.grid.major = element_line(color = "gray92"),
+    panel.grid.minor = element_line(color = "gray92")
   ))
 ```
 
@@ -255,8 +255,8 @@ pco2.mgl.b <- paste("PCo2 (", eigval.mgl.b[[2,2]], " %)", sep = "")
     plot.title = element_text(size = 10, face="bold"),
     axis.title.x = element_text(size = 9, face="bold"),
     axis.title.y = element_text(size = 9, face="bold"),
-    panel.grid.major = element_line(color = "gray80"),
-    panel.grid.minor = element_line(color = "gray80")
+    panel.grid.major = element_line(color = "gray92"),
+    panel.grid.minor = element_line(color = "gray92")
   ))
 ```
 
@@ -270,7 +270,7 @@ pcoa_bod_bio2 <- pcoa_bod_bio + theme(legend.position = "none")
 
 (tot3 <- plot_grid(top, tot2, nrow =2, rel_heights = c(3,2.2)) + theme(
     plot.background = element_rect(fill = "white", color = 'white')))
-ggsave('Figure1_BioReps.png', tot3, width = 12, height = 9, dpi = 500)
+ggsave('../Figures/Figure1_BioReps.pdf', tot3, width = 12, height = 9, dpi = 500, device = 'pdf')
 ```
 
 ------

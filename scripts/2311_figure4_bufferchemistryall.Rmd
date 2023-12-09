@@ -71,7 +71,7 @@ VENN DIAGRAM
 
 ```{r}
 #rarefied data
-df <- read.table("../data/2309_normalizedabundancetable_rarefied_buffchem", sep=",", header=T, row.names=1)
+df <- read.table("../data/2309_normalizedabundancetable_90percentreadidentity_rarefied.csv", sep=",", header=T, row.names=1)
 df <- df %>% mutate_if(is.numeric, ~1 * (. > 0)) 
 
 #select votus that are present in every sample
@@ -129,7 +129,7 @@ axes.bio <- cbind(axes,bio.m)
 
 ```{r}
 #rarefied data
-df <- read.table("../data/2309_normalizedabundancetable_rarefied_buffchem", sep=",", header=T, row.names=1)
+df <- read.table("../data/2309_normalizedabundancetable_90percentreadidentity_rarefied.csv", sep=",", header=T, row.names=1)
 df <- df %>% mutate_if(is.numeric, ~1 * (. > 0)) 
 
 #select votus that are present in every sample
@@ -208,8 +208,8 @@ pcoa.tech <-  ggplot(mapping = aes(x, y)) +
   theme( legend.text = element_text(size =10), legend.title = element_text(size=10, face = 'bold'),
          axis.title.x = element_text(size=10, face = 'bold'), axis.title.y = element_text(size=10, face = 'bold'),
          plot.title = element_text(size=10), legend.position = 'right', 
-         legend.box="vertical", panel.grid.major = element_line(color = "gray70"),
-    panel.grid.minor = element_line(color = "gray70"))
+         legend.box="vertical", panel.grid.major = element_line(color = "gray93"),
+    panel.grid.minor = element_line(color = "gray93"))
 pcoa.tech
 
 pcoa.bio <-  ggplot(mapping = aes(x, y)) +
@@ -223,8 +223,8 @@ pcoa.bio <-  ggplot(mapping = aes(x, y)) +
   theme( legend.text = element_text(size =10), legend.title = element_text(size=10, face = 'bold'),
          axis.title.x = element_text(size=10, face = 'bold'), axis.title.y = element_text(size=10, face = 'bold'),
          plot.title = element_text(size=10), legend.position = 'right', 
-         legend.box="vertical", panel.grid.major = element_line(color = "gray70"),
-    panel.grid.minor = element_line(color = "gray70"))
+         legend.box="vertical", panel.grid.major = element_line(color = "gray93"),
+    panel.grid.minor = element_line(color = "gray93"))
 pcoa.bio
 
 
@@ -240,8 +240,8 @@ pcoa.bio.2 <-  ggplot(mapping = aes(x, y)) +
   theme( legend.text = element_text(size =10), legend.title = element_text(size=10, face = 'bold'),
          axis.title.x = element_text(size=10, face = 'bold'), axis.title.y = element_text(size=10, face = 'bold'),
          plot.title = element_text(size=10), legend.position = 'right', 
-         legend.box="vertical", panel.grid.major = element_line(color = "gray70"),
-    panel.grid.minor = element_line(color = "gray70"))
+         legend.box="vertical", panel.grid.major = element_line(color = "gray93"),
+    panel.grid.minor = element_line(color = "gray93"))
 pcoa.bio.2
 
 
@@ -275,7 +275,7 @@ p4 <- pcoa.bio.2  + theme(legend.position = "none")
 (all7 <- plot_grid(all, NULL, legends, NULL, nrow = 1, rel_widths = c(2, -.2, .6, -.2)) + theme(
     plot.background = element_rect(fill = "white", color = 'white')))
 
-ggsave('Fig4_BuffChem_BioRepVennComparison.png', all7, dpi = 300, height = 7, width = 10)
+ggsave('../Figures/Fig4_BuffChem_BioRepVennComparison.pdf', all7, dpi = 300, height = 7, width = 14, device = 'pdf')
 ```
 
 

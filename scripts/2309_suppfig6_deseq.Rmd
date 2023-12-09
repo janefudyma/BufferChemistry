@@ -341,7 +341,7 @@ plot_data <- dplyr::count(def.bod, Trend)
 
 (diff.ab.together <- plot_grid(ang.diff.ab,mgl.diff.ab,  bod.diff.ab, ncol = 3, labels = c('A','B','C')))
 
-ggsave('DeSeqBarChart_pH4vsOthersComparison.png', diff.ab.together, dpi = 300, width = 10, height = 5)
+ggsave('../Figures/SuppFig6_DeSeqBarChart_pH4vsOthersComparison.pdf', diff.ab.together, dpi = 300, width = 10, height = 5, device = 'pdf')
 ```
 
 

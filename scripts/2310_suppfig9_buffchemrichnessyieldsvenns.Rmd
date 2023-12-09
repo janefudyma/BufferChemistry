@@ -53,7 +53,9 @@ summary(tech.aov) #not significant
     geom_point(aes(fill=Buffer), color = 'black', pch = 21, size = 4, alpha = 0.9, show.legend = FALSE) +
     scale_fill_manual(values = c('azure4', '#F99B45', '#63AAC0', '#D95980')) + 
     labs(x= NULL, y= 'Viral Richness') + theme_linedraw(base_size = 16) + 
-    facet_grid(~Type, labeller = labeller(Type = c("TR" = "Technical Replicates"))))
+    facet_grid(~Type, labeller = labeller(Type = c("TR" = "Technical Replicates")))+
+    theme(panel.grid.major = element_line(color = "gray93"),
+    panel.grid.minor = element_line(color = "gray93")))
 ```
 
 
@@ -85,14 +87,18 @@ pairs(emmeans(bio.mod, ~Rep)) #BR1 vs 2 and BR1 vs 3 significant
     scale_fill_manual(values = c('azure4', '#F99B45', '#63AAC0', '#D95980')) + 
     scale_shape_manual(values = c(21,22,24)) +
     labs(x=NULL, y= '') + theme_linedraw(base_size = 16) + 
-    facet_grid(~Type, labeller = labeller(Type = c("BR" = "Biological Replicates"))))
+    facet_grid(~Type, labeller = labeller(Type = c("BR" = "Biological Replicates"))) +
+    theme(panel.grid.major = element_line(color = "gray93"),
+    panel.grid.minor = element_line(color = "gray93")))
 
 a.div.bio$Rep <- as.character(a.div.bio$Rep) #change back to character for plotting
 (a.div.bio.reps.plot <- ggplot(a.div.bio, aes(x = Rep, y = S.obs)) + 
     geom_point(aes(fill=Rep), col = 'black', pch = 21, size = 4, alpha = 0.9, show.legend = FALSE) +
     scale_fill_manual(values = c('aliceblue','lavenderblush3', 'bisque')) + 
     labs(x=NULL, y= '') + theme_linedraw(base_size = 16) + 
-    facet_grid(~Type, labeller = labeller(Type = c("BR" = "Biological Replicates"))))
+    facet_grid(~Type, labeller = labeller(Type = c("BR" = "Biological Replicates"))) +
+    theme(panel.grid.major = element_line(color = "gray93"),
+    panel.grid.minor = element_line(color = "gray93")))
 
 (a.div.bio.reps.plot.2 <- a.div.bio.reps.plot +
     geom_line(data=tibble(x=c(1,3), y = c(2200,2200)), aes (x=x, y=y), inherit.aes = FALSE) +
@@ -134,8 +140,8 @@ summary(tech.aov.yield) #not significant
   theme_linedraw() +
   scale_fill_manual(values = c('azure4', '#F99B45', '#63AAC0', '#D95980'))  + 
   theme(text = element_text(size = 15),
-        legend.position = "none", panel.grid.major = element_line(color = "gray80"),
-    panel.grid.minor = element_line(color = "gray80")) + scale_y_continuous(labels = function(x) sprintf("%.2f", x)) + 
+        legend.position = "none", panel.grid.major = element_line(color = "gray93"),
+    panel.grid.minor = element_line(color = "gray93")) + scale_y_continuous(labels = function(x) sprintf("%.2f", x)) + 
   facet_wrap(~Type, labeller = labeller(Type = c("TR" = "Technical Replicates")) ))
 ```
 
@@ -173,8 +179,8 @@ pairs(emmeans(bio.mod.yield, ~Buffer)) # nothing is significant
   scale_fill_manual(values = c('azure4', '#F99B45', '#63AAC0', '#D95980'))  + 
   scale_shape_manual(values = c(21,22,24)) +
   theme(text = element_text(size = 15), 
-        legend.position = "none", panel.grid.major = element_line(color = "gray80"),
-    panel.grid.minor = element_line(color = "gray80")) + scale_y_continuous(labels = function(x) sprintf("%.2f", x)) + 
+        legend.position = "none", panel.grid.major = element_line(color = "gray93"),
+    panel.grid.minor = element_line(color = "gray93")) + scale_y_continuous(labels = function(x) sprintf("%.2f", x)) + 
   facet_wrap(~Type, labeller = labeller(Type = c("BR" = "Biological Replicates")) ))
 
 
@@ -185,8 +191,8 @@ pairs(emmeans(bio.mod.yield, ~Buffer)) # nothing is significant
   theme_linedraw() +
   scale_fill_manual(values = c('aliceblue','lavenderblush3', 'bisque'))  + 
   theme(text = element_text(size = 15), 
-        legend.position = "none", panel.grid.major = element_line(color = "gray80"),
-    panel.grid.minor = element_line(color = "gray80")) + scale_y_continuous(labels = function(x) sprintf("%.2f", x)) + 
+        legend.position = "none", panel.grid.major = element_line(color = "gray93"),
+    panel.grid.minor = element_line(color = "gray93")) + scale_y_continuous(labels = function(x) sprintf("%.2f", x)) + 
   facet_wrap(~Type, labeller = labeller(Type = c("BR" = "Biological Replicates")) ))
 
 (yieldplots.bio.2.2 <- yieldplots.bio.2 +
@@ -212,7 +218,7 @@ df$GL <- with(df, ifelse(GL_TR1 == 1 & GL_TR2 == 1 & GL_TR3 == 1 & GL_TR4 == 1, 
 df$PB <- with(df, ifelse(PB_TR1 == 1 & PB_TR2 == 1 & PB_TR3 == 1 & PB_TR4 == 1, 1, 0))
 df$SM <- with(df, ifelse(SM_TR1 == 1 & SM_TR2 == 1 & SM_TR3 == 1 & SM_TR4 == 1, 1, 0))
 
-df1 <- df %>% select(CB:SM)
+df1 <- df %>% dplyr::select(CB:SM)
 
 df1$CB[df1$CB > 0] <- (rownames(df1)[df1$CB > 0])
 df1$GL[df1$GL > 0] <- (rownames(df1)[df1$GL > 0])
@@ -236,7 +242,7 @@ df$GL <- with(df, ifelse(GL_BR1 == 1 & GL_BR2 == 1 & GL_BR3 == 1, 1, 0 ))
 df$PB <- with(df, ifelse(PB_BR1 == 1 & PB_BR2 == 1 & PB_BR3 == 1, 1, 0 ))
 df$SM <- with(df, ifelse(SM_BR1 == 1 & SM_BR2 == 1 & SM_BR3 == 1, 1, 0 ))
 
-df1 <- df %>% select(CB:SM)
+df1 <- df %>% dplyr::select(CB:SM)
 
 df1$CB[df1$CB > 0] <- (rownames(df1)[df1$CB > 0])
 df1$GL[df1$GL > 0] <- (rownames(df1)[df1$GL > 0])
@@ -260,7 +266,7 @@ df$BR1 <- with(df, ifelse(CB_BR1 == 1 & GL_BR1 == 1 & PB_BR1 == 1 & SM_BR1 == 1,
 df$BR2 <- with(df, ifelse(CB_BR2 == 1 & GL_BR2 == 1 & PB_BR2 == 1 & SM_BR2 == 1, 1, 0))
 df$BR3 <- with(df, ifelse(CB_BR3 == 1 & GL_BR3 == 1 & PB_BR3 == 1 & SM_BR3 == 1, 1, 0))
 
-df1 <- df %>% select(BR1:BR3)
+df1 <- df %>% dplyr::select(BR1:BR3)
 
 df1$BR1[df1$BR1 > 0] <- (rownames(df1)[df1$BR1 > 0])
 df1$BR2[df1$BR2 > 0] <- (rownames(df1)[df1$BR2 > 0])
@@ -290,7 +296,7 @@ legend2 <- get_legend(p2)
 
 
 (suppplot <- plot_grid(alphadiversitycombo, yieldplotstogether, vents, NULL, legends, ncol = 1, rel_heights = c(1,1,1, -.07, .2)) + theme(plot.background = element_rect(fill = "white", color = 'white')))
-ggsave('BuffChem_SuppPlot.png', suppplot, dpi = 400, width = 9, height = 12)
+ggsave('../Figures/SuppFig9_BuffChem_SuppPlot.pdf', suppplot, dpi = 400, width = 9, height = 12, device = 'pdf')
 ```
 
 

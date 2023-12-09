@@ -16,7 +16,7 @@ library(seqinr)
 ---------------------------
 
 ```{r}
-otu <- read.table('2309.paladin.surfaceproteinsfinal.mean.tsv', sep = "\t", header=T) %>% column_to_rownames(var='Contig')
+otu <- read.table('../data/2309.paladin.surfaceproteinsfinal.mean.tsv', sep = "\t", header=T) %>% column_to_rownames(var='Contig')
 otu2 <- otu %>% filter(rowSums(. != 0) > 0)
 
 otu <- t(otu2)
@@ -62,8 +62,8 @@ pcoa.all <-  ggplot(mapping = aes(x, y)) +
     plot.title = element_text(size = 10, face="bold"),
     axis.title.x = element_text(size = 9, face ="bold"),
     axis.title.y = element_text(size = 9, face = "bold"),
-    panel.grid.major = element_line(color = "gray80"),
-    panel.grid.minor = element_line(color = "gray80"))
+    panel.grid.major = element_line(color = "gray93"),
+    panel.grid.minor = element_line(color = "gray93"))
 pcoa.all
 ```
 
@@ -95,7 +95,7 @@ permutest(disp.pH, permutations=1000, pairwise = T) #not sig, can proceed
 #generate dist matrices for stats
 
 #forest
-otu.a <- read.table('2309.paladin.surfaceproteinsfinal.mean.tsv', sep = "\t", header=T) %>% column_to_rownames(var='Contig') %>% select(starts_with('AN'))
+otu.a <- read.table('../data/2309.paladin.surfaceproteinsfinal.mean.tsv', sep = "\t", header=T) %>% column_to_rownames(var='Contig') %>% select(starts_with('AN'))
 otu.a.2 <- otu.a %>% filter(rowSums(. != 0) > 0)
 otu <- t(otu.a.2)
 otu.xform <- decostand(otu, method="hellinger")
@@ -108,7 +108,7 @@ axes.a$Rep <- substr(rownames(axes.a), 6, 6)
 axes.a$Soil <- substr(rownames(axes.a), 1, 2)
 
 #wetland
-otu.b <- read.table('2309.paladin.surfaceproteinsfinal.mean.tsv', sep = "\t", header=T) %>% column_to_rownames(var='Contig') %>% select(starts_with('BB'))
+otu.b <- read.table('../data/2309.paladin.surfaceproteinsfinal.mean.tsv', sep = "\t", header=T) %>% column_to_rownames(var='Contig') %>% select(starts_with('BB'))
 otu.b.2 <- otu.b %>% filter(rowSums(. != 0) > 0)
 otu <- t(otu.b.2)
 otu.xform <- decostand(otu, method="hellinger")
@@ -121,7 +121,7 @@ axes.b$Rep <- substr(rownames(axes.b), 6, 6)
 axes.b$Soil <- substr(rownames(axes.b), 1, 2)
 
 #grassland
-otu.m <- read.table('2309.paladin.surfaceproteinsfinal.mean.tsv', sep = "\t", header=T) %>% column_to_rownames(var='Contig') %>% select(starts_with('ML'))
+otu.m <- read.table('../data/2309.paladin.surfaceproteinsfinal.mean.tsv', sep = "\t", header=T) %>% column_to_rownames(var='Contig') %>% select(starts_with('ML'))
 otu.m.2 <- otu.m %>% filter(rowSums(. != 0) > 0)
 otu <- t(otu.m.2)
 otu.xform <- decostand(otu, method="hellinger")
@@ -178,7 +178,7 @@ permutest(disp.wetland.pH, permutations=1000, pairwise = T) #not sig, can procee
 2. Panel B: betadiversity distance decay
 -----------------------------------------
 ```{r}
-otu.ml <- read.table('2309.paladin.surfaceproteinsfinal.mean.tsv', sep = "\t", header=T) %>% column_to_rownames(var='Contig') %>% select(starts_with('ML'))
+otu.ml <- read.table('../data/2309.paladin.surfaceproteinsfinal.mean.tsv', sep = "\t", header=T) %>% column_to_rownames(var='Contig') %>% select(starts_with('ML'))
 otu.m.2 <- otu.ml %>% filter(rowSums(. != 0) > 0)
 
 otu.m <- t(otu.m.2)
@@ -208,7 +208,7 @@ combined.m <- bray.dist.m %>%
 ```
 
 ```{r}
-otu.an <- read.table('2309.paladin.surfaceproteinsfinal.mean.tsv', sep = "\t", header=T) %>% column_to_rownames(var='Contig') %>% select(starts_with('AN'))
+otu.an <- read.table('../data/2309.paladin.surfaceproteinsfinal.mean.tsv', sep = "\t", header=T) %>% column_to_rownames(var='Contig') %>% select(starts_with('AN'))
 otu.a.2 <- otu.an %>% filter(rowSums(. != 0) > 0)
 
 otu.a <- t(otu.a.2)
@@ -238,7 +238,7 @@ combined.a <- bray.dist.a %>%
 ```
 
 ```{r}
-otu.bb <- read.table('2309.paladin.surfaceproteinsfinal.mean.tsv', sep = "\t", header=T) %>% column_to_rownames(var='Contig') %>% select(starts_with('BB'))
+otu.bb <- read.table('../data/2309.paladin.surfaceproteinsfinal.mean.tsv', sep = "\t", header=T) %>% column_to_rownames(var='Contig') %>% select(starts_with('BB'))
 otu.b.2 <- otu.bb %>% filter(rowSums(. != 0) > 0) 
 
 otu.b <- t(otu.b.2)
@@ -278,14 +278,14 @@ combined4plots$Site <- factor(combined4plots$Site, levels=c("Forest", "Grassland
   geom_smooth(data = subset(combined4plots, Site == "Grassland"), method = "lm", se = FALSE, formula = y ~ x, color = 'burlywood1', show.legend = FALSE) +
   geom_smooth(data = subset(combined4plots, Site == "Wetland"), method = "lm", se = FALSE, formula = y ~ x, color = 'cornflowerblue', show.legend = FALSE) +
   geom_smooth(data = subset(combined4plots, Site == "Forest"), method = "lm", se = FALSE, formula = y ~ x, color = 'darkslateblue', show.legend = FALSE) +
-  stat_regline_equation(label.y = c(0.07, 0.067, 0.065), label.x = 0, aes(label = ..eq.label..), formula = y ~ x, size = 3) +
+  stat_regline_equation(label.y = c(0.07, 0.067, 0.065), label.x = 0, aes(label = ..eq.label..), formula = y ~ x, size = 2.5) +
   stat_cor(aes(label = paste(..rr.label.., ..p.label.., sep = "*`,`~")),
-           label.y = 0.06, label.x = 0, size = 3) +
+           label.y = 0.06, label.x = 0, size = 2.5) +
   geom_point(col = 'black', pch = 21, show.legend = FALSE) + scale_y_continuous(expand=expansion(mult=c(0.05,0.15))) +
   scale_fill_manual(values = c('darkslateblue', 'burlywood1', 'cornflowerblue')) + theme_linedraw() + facet_wrap(~Site, scales = "free_y") + labs(y = 'Viral surface protein compositional dissimilarity \n(Bray-Curtis)', x = 'Distance between buffer pHs') + 
     theme(axis.title.x = element_text(face ="bold"),
-    axis.title.y = element_text(face = "bold"),panel.grid.major = element_line(color = "gray80"),
-    panel.grid.minor = element_line(color = "gray80")))
+    axis.title.y = element_text(face = "bold"),panel.grid.major = element_line(color = "gray93"),
+    panel.grid.minor = element_line(color = "gray93")))
 ```
 
 ```{r}
@@ -352,13 +352,13 @@ add_pI_column <- function(df) {
 
 
 ```{r}
-df <- read.table('2309.paladin.surfaceproteinsfinal.mean.tsv',sep = "\t", header=T) %>% 
+df <- read.table('../data/2309.paladin.surfaceproteinsfinal.mean.tsv',sep = "\t", header=T) %>% 
   column_to_rownames(var='Contig') %>% 
   select(starts_with('ML')) %>% 
   filter(rowSums(. != 0) > 0) %>% 
   rownames_to_column(var='protein_id')
 
-squn <- read_csv('2309_surfaceproteins_vcontactdatabase_AAsequences.csv')
+squn <- read_csv('../data/2309_surfaceproteins_vcontactdatabase_AAsequences.csv')
 
 df <- df  %>% left_join(squn, by ="protein_id")
 df <- add_pI_column(df)
@@ -378,8 +378,8 @@ df.tidy$pH <- substr(df.tidy$SampleID, 8, 8)
   labs(x = 'Bioinformatically Calculated Isoelectric Point', y = 'Density') + 
   facet_wrap(~pH, ncol=1, labeller = labeller(pH = c("4" = "4.5","5" = "5.5", "6" = "6.5", "8" = "7.5"))) + xlim(2.5, 12.5) + 
   scale_fill_manual(values = c('goldenrod1','darkolivegreen3','chartreuse4', 'darkcyan'), labels = c("4.5", "5.5", "6.5", "7.5") ) + 
-    theme( panel.grid.major = element_line(color = "gray80"),
-    panel.grid.minor = element_line(color = "gray80"), legend.position = 'bottom', legend.title = element_text(face = 'bold', size = 8), legend.text = element_text(size = 8), axis.title.x = element_text(face ="bold"),
+    theme( panel.grid.major = element_line(color = "gray93"),
+    panel.grid.minor = element_line(color = "gray93"), legend.position = 'bottom', legend.title = element_text(face = 'bold', size = 8), legend.text = element_text(size = 8), axis.title.x = element_text(face ="bold"),
     axis.title.y = element_text(face = "bold")))
 
 ```
@@ -395,9 +395,9 @@ pcoa.all.2 <- pcoa.all + theme(legend.position = 'none')
 (legends33 <- plot_grid(legend2, legend, ncol = 1, rel_widths = c(1,1)))
 
 (lerft <- plot_grid(pcoa.all.2, legends33, ncol = 1, rel_heights = c(2, 0.4)))
-(finalplot <- plot_grid(lerft, bc.plots, plot11, ncol = 3, labels = c('A','B','C'), rel_widths = c(1.1,1.5,1.5)) + theme(plot.background = element_rect(fill = "white", color = 'white')))
+(finalplot <- plot_grid(lerft, bc.plots, plot11, ncol = 3, labels = c('A','B','C'), rel_widths = c(1.1,1.6,1.5)) + theme(plot.background = element_rect(fill = "white", color = 'white')))
 
-ggsave('Figure3_Protein_BetaDiversity_Iso.png', finalplot, width = 14, height = 5)
+ggsave('../Figures/Figure3_Protein_BetaDiversity_Iso.pdf', finalplot, width = 14, height = 5, dpi = 400, device = 'pdf')
 ```
 
 

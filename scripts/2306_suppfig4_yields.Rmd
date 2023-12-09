@@ -75,8 +75,8 @@ pairs(emmeans(an.tech.mod, ~pH)) #4 vs 8 is significant
   scale_x_discrete(labels=c("4" = "4.5", "5" = "5.5",
                               "6" = "6.5", "8" = "7.5")) +
   theme(text = element_text(size = 15),
-        legend.position = "none", panel.grid.major = element_line(color = "gray80"),
-    panel.grid.minor = element_line(color = "gray80")) + scale_y_continuous(labels = function(x) sprintf("%.2f", x)) + 
+        legend.position = "none", panel.grid.major = element_line(color = "gray93"),
+    panel.grid.minor = element_line(color = "gray93")) + scale_y_continuous(labels = function(x) sprintf("%.2f", x)) + 
   facet_wrap(~Site, labeller = labeller(Site = c("AN" = "Forest")) ))
 
 (yieldplots.ang.2 <- yieldplots.ang + geom_line(data=tibble(x=c(1,4), y = c(2.6,2.6)), aes (x=x, y=y), inherit.aes = FALSE) + 
@@ -98,8 +98,8 @@ summary(bb.tech.aov) #not significant
   scale_x_discrete(labels=c("4" = "4.5", "5" = "5.5",
                               "6" = "6.5", "8" = "7.5")) +
   theme(text = element_text(size = 15),
-        legend.position = "none", panel.grid.major = element_line(color = "gray80"),
-    panel.grid.minor = element_line(color = "gray80")) + scale_y_continuous(labels = function(x) sprintf("%.2f", x), limits = c(1, 4.75)) + 
+        legend.position = "none", panel.grid.major = element_line(color = "gray93"),
+    panel.grid.minor = element_line(color = "gray93")) + scale_y_continuous(labels = function(x) sprintf("%.2f", x), limits = c(1, 4.75)) + 
   facet_grid(Rep~Site, labeller = labeller(Site = c("BB" = "Wetland"), Rep = c("TR" = "Technical Replicates")) ) )
 
 
@@ -119,8 +119,8 @@ pairs(emmeans(ml.tech.mod, ~pH)) #4 vs 6 is significant 0.0332114
   scale_x_discrete(labels=c("4" = "4.5", "5" = "5.5",
                               "6" = "6.5", "8" = "7.5")) +
   theme(text = element_text(size = 15),
-        legend.position = "none", panel.grid.major = element_line(color = "gray80"),
-    panel.grid.minor = element_line(color = "gray80")) + scale_y_continuous(labels = function(x) sprintf("%.2f", x)) + 
+        legend.position = "none", panel.grid.major = element_line(color = "gray93"),
+    panel.grid.minor = element_line(color = "gray93")) + scale_y_continuous(labels = function(x) sprintf("%.2f", x)) + 
   facet_wrap(~Site, labeller = labeller(Site = c("ML" = "Grassland")) ))
 
 (yieldplots.mgl.2 <- yieldplots.mgl + geom_line(data=tibble(x=c(1,3), y = c(0.32,0.32)), aes (x=x, y=y), inherit.aes = FALSE) + 
@@ -128,7 +128,6 @@ pairs(emmeans(ml.tech.mod, ~pH)) #4 vs 6 is significant 0.0332114
 
 
 (together <- plot_grid(yieldplots.mgl.2, yieldplots.ang.2, yieldplots.bod, ncol=3, rel_widths = c(2.5,2.3,2.5)))
-#ggsave('TechnicalRepyields_withstats.png', together, dpi=300, width = 10, height = 6)
 ```
 
 
@@ -148,8 +147,8 @@ summary(an.bio.aov ) #not significant
                               "6" = "6.5", "8" = "7.5")) +
   scale_shape_manual(values = c(21,22,24)) +
   theme(text = element_text(size = 15),
-        legend.position = "none", panel.grid.major = element_line(color = "gray80"),
-    panel.grid.minor = element_line(color = "gray80")) + scale_y_continuous(labels = function(x) sprintf("%.2f", x)) + 
+        legend.position = "none", panel.grid.major = element_line(color = "gray93"),
+    panel.grid.minor = element_line(color = "gray93")) + scale_y_continuous(labels = function(x) sprintf("%.2f", x)) + 
   facet_wrap(~Site, labeller = labeller(Site = c("AN" = "Forest")) ))
 
 (yieldplots.ang.bioreps <- dfbio.a %>% 
@@ -159,8 +158,8 @@ summary(an.bio.aov ) #not significant
   theme_linedraw() +
   scale_fill_manual(values = c('azure3','darkslategray', 'darksalmon'))  + 
   theme(text = element_text(size = 15),
-        legend.position = "none", panel.grid.major = element_line(color = "gray80"),
-    panel.grid.minor = element_line(color = "gray80")) + scale_y_continuous(labels = function(x) sprintf("%.2f", x)) + 
+        legend.position = "none", panel.grid.major = element_line(color = "gray93"),
+    panel.grid.minor = element_line(color = "gray93")) + scale_y_continuous(labels = function(x) sprintf("%.2f", x)) + 
   facet_wrap(~Site, labeller = labeller(Site = c("AN" = "Forest")) ))
 
 #wetland - transformed vs not-transformed - similar results, proceeding with non-transformed to be consistent with graphs
@@ -183,8 +182,8 @@ anova(bb.bio.glm, test = 'Chisq') #not significant
   scale_x_discrete(labels=c("4" = "4.5", "5" = "5.5",
                               "6" = "6.5", "8" = "7.5")) +
   theme(text = element_text(size = 15),
-        legend.position = "none", panel.grid.major = element_line(color = "gray80"),
-    panel.grid.minor = element_line(color = "gray80")) + #scale_y_continuous(labels = function(x) sprintf("%.2f", x), limits = c(2.4, 14)) + 
+        legend.position = "none", panel.grid.major = element_line(color = "gray93"),
+    panel.grid.minor = element_line(color = "gray93")) + #scale_y_continuous(labels = function(x) sprintf("%.2f", x), limits = c(2.4, 14)) + 
   facet_grid(Rep~Site, labeller = labeller(Site = c("BB" = "Wetland"), Rep = c("BR" = "Biological Replicates")) ) ) 
 
 (yieldplots.bod.bioreps <- dfbio.b %>% 
@@ -194,8 +193,8 @@ anova(bb.bio.glm, test = 'Chisq') #not significant
   theme_linedraw() +
   scale_fill_manual(values = c('azure3','darkslategray', 'darksalmon'))  + 
   theme(text = element_text(size = 15),
-        legend.position = "none", panel.grid.major = element_line(color = "gray80"),
-    panel.grid.minor = element_line(color = "gray80")) + scale_y_continuous(labels = function(x) sprintf("%.2f", x)) + 
+        legend.position = "none", panel.grid.major = element_line(color = "gray93"),
+    panel.grid.minor = element_line(color = "gray93")) + scale_y_continuous(labels = function(x) sprintf("%.2f", x)) + 
   facet_grid(Rep~Site, labeller = labeller(Site = c("BB" = "Wetland"), Rep = c("BR" = "Biological Replicates")) ) ) 
 
 #grassland
@@ -215,8 +214,8 @@ pairs(emmeans(ml.bio.mod, ~Type)) #1 vs 2 p val 0.0208861, 1 vs 3 0.0480201
   scale_x_discrete(labels=c("4" = "4.5", "5" = "5.5",
                               "6" = "6.5", "8" = "7.5")) +
   theme(text = element_text(size = 15),
-        legend.position = "none", panel.grid.major = element_line(color = "gray80"),
-    panel.grid.minor = element_line(color = "gray80")) + scale_y_continuous(labels = function(x) sprintf("%.2f", x), limits = c(.1, .6)) + 
+        legend.position = "none", panel.grid.major = element_line(color = "gray93"),
+    panel.grid.minor = element_line(color = "gray93")) + scale_y_continuous(labels = function(x) sprintf("%.2f", x), limits = c(.1, .6)) + 
   facet_wrap(~Site, labeller = labeller(Site = c("ML" = "Grassland")) ))
 
 (yieldplots.mgl.bioreps <- dfbio.m %>% 
@@ -226,8 +225,8 @@ pairs(emmeans(ml.bio.mod, ~Type)) #1 vs 2 p val 0.0208861, 1 vs 3 0.0480201
   theme_linedraw() +
   scale_fill_manual(values = c('azure3','darkslategray', 'darksalmon'))  + 
   theme(text = element_text(size = 15),
-        legend.position = "none", panel.grid.major = element_line(color = "gray80"),
-    panel.grid.minor = element_line(color = "gray80")) + scale_y_continuous(labels = function(x) sprintf("%.2f", x), limits = c(.1, .6)) + 
+        legend.position = "none", panel.grid.major = element_line(color = "gray93"),
+    panel.grid.minor = element_line(color = "gray93")) + scale_y_continuous(labels = function(x) sprintf("%.2f", x), limits = c(.1, .6)) + 
   facet_wrap(~Site, labeller = labeller(Site = c("ML" = "Grassland")) ))
 
 (yieldplots.mgl.bioreps.2 <- yieldplots.mgl.bioreps +
@@ -239,14 +238,12 @@ pairs(emmeans(ml.bio.mod, ~Type)) #1 vs 2 p val 0.0208861, 1 vs 3 0.0480201
 
 (together.bio <- plot_grid(yieldplots.mgl.bio, yieldplots.ang.bio, yieldplots.bod.bio, ncol=3, rel_widths = c(2.5,2.3,2.5)))
 (together.bio.reps <- plot_grid(yieldplots.mgl.bioreps.2, yieldplots.ang.bioreps, yieldplots.bod.bioreps, ncol=3, rel_widths = c(2.5,2.3,2.5)))
-
-#ggsave('BiologicalRepyields_withstats.png', together.bio, dpi=300, width = 10, height = 6)
 ```
 
 
 ```{r}
 (combinedyields <- plot_grid(together.bio, together.bio.reps, together, ncol = 1, labels = c('A','B','C')))
-ggsave('DNAYields_Allsoils_allreps.png', combinedyields, width = 10, height = 10)
+ggsave('../Figures/SuppFig4_DNAYields_Allsoils_allreps.pdf', combinedyields, width = 10, height = 10, device = 'pdf')
 ```
 
 

@@ -58,8 +58,8 @@ df.tidy$soil <- factor(df.tidy$soil, levels=c("ML", "AN", "BB"))
 (plot1 <-  ggplot(df.tidy, aes(x=IEP, fill = soil)) + geom_density(alpha=0.7) + theme_linedraw() + 
   labs(x = 'Isoelectric Point', y = 'Density') + 
   facet_wrap(~soil, ncol=1, labeller = labeller(soil = c("ML" = "Grassland","AN" = "Forest", "BB" = "Wetland"))) + xlim(2.5, 12.5) + 
-  scale_fill_manual(values = c('burlywood1', 'darkslateblue', 'cornflowerblue')) + theme( panel.grid.major = element_line(color = "gray80"),
-    panel.grid.minor = element_line(color = "gray80"), legend.position = 'none'))
+  scale_fill_manual(values = c('burlywood1', 'darkslateblue', 'cornflowerblue')) + theme( panel.grid.major = element_line(color = "gray93"),
+    panel.grid.minor = element_line(color = "gray93"), legend.position = 'none'))
 
 df.tidy.a <- df.tidy %>% filter(soil == 'AN')
 df.tidy.b <- df.tidy %>% filter(soil == 'BB')
@@ -85,11 +85,11 @@ anova(m.mod, test = 'Chisq') #not significant
 (pic1 <- ggplot(df.tidy, aes(pH, IEP, fill = pH)) + geom_boxplot(show.legend = FALSE) + theme_linedraw() + 
   labs(y = 'Isoelectric Point') + 
   scale_x_discrete(labels=c("4" = "4.5", "5" = "5.5","6" = "6.5","8" = "7.5")) +
-  scale_fill_manual(values = c('goldenrod1','darkolivegreen3','chartreuse4', 'darkcyan')) + facet_wrap(~soil, nrow = 1, labeller = labeller(soil = c("ML" = "Grassland","AN" = "Forest", "BB" = "Wetland"))) + theme( panel.grid.major = element_line(color = "gray80"),
-    panel.grid.minor = element_line(color = "gray80")))
+  scale_fill_manual(values = c('goldenrod1','darkolivegreen3','chartreuse4', 'darkcyan')) + facet_wrap(~soil, nrow = 1, labeller = labeller(soil = c("ML" = "Grassland","AN" = "Forest", "BB" = "Wetland"))) + theme( panel.grid.major = element_line(color = "gray93"),
+    panel.grid.minor = element_line(color = "gray93")))
 
 
 (sfig <- plot_grid(plot1, pic1, ncol = 2, labels = c('A','B'), rel_widths = c(2, 1.5)))
-ggsave('IEPDistribution_bysoil_byPH_SuppFig.png', sfig, width = 10, height = 4)
+ggsave('../Figures/SuppFig8_IEPDistribution_bysoil_byPH_SuppFig.pdf', sfig, width = 12, height = 5, dpi = 300, device = 'pdf')
 ```
 

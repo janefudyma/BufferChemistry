@@ -67,14 +67,18 @@ summary(an.bio.aov) #not significant
     scale_shape_manual(values = c(21,22,24)) +
     scale_x_discrete(labels=c("4" = "4.5", "5" = "5.5","6" = "6.5", "8" = "7.5")) +
     labs(x= 'pH', y= '', fill= 'pH') + theme_linedraw(base_size = 16) +
-    facet_grid(~Site, labeller = labeller(Site = c("AN" = "Forest"))))
+    facet_grid(~Site, labeller = labeller(Site = c("AN" = "Forest"))) + 
+    theme(panel.grid.major = element_line(color = "gray93"),
+    panel.grid.minor = element_line(color = "gray93")))
 
 
 (plot_rep_an <- ggplot(data_alphadiv_an, aes(x = Type, y = S.obs)) + 
     geom_point(aes(fill=Type), pch = 21, alpha = 0.9, size = 3, col = 'black', show.legend = FALSE) +
     scale_fill_manual(values = set_reps) +
     labs(x= 'Replicate', y= '') + theme_linedraw(base_size = 16) +
-    facet_grid(~Site, labeller = labeller(Site = c("AN" = "Forest"))))
+    facet_grid(~Site, labeller = labeller(Site = c("AN" = "Forest"))) +
+    theme(panel.grid.major = element_line(color = "gray93"),
+    panel.grid.minor = element_line(color = "gray93")))
 ```
 
 ```{r}
@@ -91,14 +95,18 @@ pairs(emmeans(ml.bio.lm.mod, ~Type)) #rep 1 vs rep 2 are significantly diff *
     scale_shape_manual(values = c(21,22,24)) +
     scale_x_discrete(labels=c("4" = "4.5", "5" = "5.5","6" = "6.5", "8" = "7.5")) +
     labs(x= '', y= 'Viral Richness', fill= 'pH') + theme_linedraw(base_size = 16) +
-    facet_grid(~Site, labeller = labeller(Site = c("ML" = "Grassland"))))
+    facet_grid(~Site, labeller = labeller(Site = c("ML" = "Grassland"))) +
+    theme(panel.grid.major = element_line(color = "gray93"),
+    panel.grid.minor = element_line(color = "gray93")))
 
 
 (plot_rep_ml <- ggplot(data_alphadiv_ml, aes(x = Type, y = S.obs)) + 
     geom_point(aes(fill=Type), pch = 21, alpha = 0.9, size = 3, col = 'black', show.legend = FALSE) +
     scale_fill_manual(values = set_reps) +
     labs(x= '', y= 'Viral Richness') + theme_linedraw(base_size = 16) +
-    facet_grid(~Site, labeller = labeller(Site = c("ML" = "Grassland"))))
+    facet_grid(~Site, labeller = labeller(Site = c("ML" = "Grassland"))) +
+    theme(panel.grid.major = element_line(color = "gray93"),
+    panel.grid.minor = element_line(color = "gray93")))
 
 (plot_rep_ml.2 <- plot_rep_ml +
     geom_line(data=tibble(x=c(1,2), y = c(2650,2650)), aes (x=x, y=y), inherit.aes = FALSE) +
@@ -125,7 +133,9 @@ pairs(emmeans(bb.bio.lm.mod, ~Type)) #1 vs 2 are sig diff (p = 0.0280)
     scale_shape_manual(values = c(21,22,24)) +
     scale_x_discrete(labels=c("4" = "4.5", "5" = "5.5","6" = "6.5", "8" = "7.5")) +
     labs(x= '', y= '', fill= 'pH') + theme_linedraw(base_size = 16) +
-    facet_grid(~Site, labeller = labeller(Site = c("BB" = "Wetland"))))
+    facet_grid(~Site, labeller = labeller(Site = c("BB" = "Wetland"))) +
+    theme(panel.grid.major = element_line(color = "gray93"),
+    panel.grid.minor = element_line(color = "gray93")))
 
 (plot_pH_bb.2 <- plot_pH_bb +
     geom_line(data=tibble(x=c(1,3), y = c(1600,1600)), aes (x=x, y=y), inherit.aes = FALSE) +
@@ -137,7 +147,9 @@ pairs(emmeans(bb.bio.lm.mod, ~Type)) #1 vs 2 are sig diff (p = 0.0280)
     geom_point(aes(fill=Type), pch = 21, alpha = 0.9, size = 3, col = 'black', show.legend = FALSE) +
     scale_fill_manual(values = set_reps) +
     labs(x= '', y= '') + theme_linedraw(base_size = 16) +
-    facet_grid(~Site, labeller = labeller(Site = c("BB" = "Wetland"))))
+    facet_grid(~Site, labeller = labeller(Site = c("BB" = "Wetland"))) +
+    theme(panel.grid.major = element_line(color = "gray93"),
+    panel.grid.minor = element_line(color = "gray93")))
 
 (plot_rep_bb.2 <- plot_rep_bb +
     geom_line(data=tibble(x=c(1,2), y = c(1600,1600)), aes (x=x, y=y), inherit.aes = FALSE) +
@@ -203,7 +215,9 @@ anova(an.tech.mod, test = 'Chisq') #analysis of deviance, not significant
     scale_fill_manual(values = set_pH) +
     scale_x_discrete(labels=c("4" = "4.5", "5" = "5.5","6" = "6.5", "8" = "7.5")) +
     labs(x= 'pH', y= '', fill= 'pH') + theme_linedraw(base_size = 16) +
-    facet_grid(~Site, labeller = labeller(Site = c("AN" = "Forest"))))
+    facet_grid(~Site, labeller = labeller(Site = c("AN" = "Forest"))) + 
+    theme(panel.grid.major = element_line(color = "gray93"),
+    panel.grid.minor = element_line(color = "gray93")))
 ```
 
 ```{r}
@@ -219,7 +233,9 @@ pairs(emmeans(ml.tech.lm, ~pH)) #4 vs 6 and 4 vs 8 significant
     scale_fill_manual(values = set_pH) +
     scale_x_discrete(labels=c("4" = "4.5", "5" = "5.5","6" = "6.5", "8" = "7.5")) +
     labs(x= '', y= 'Viral Richness', fill= 'pH') + theme_linedraw(base_size = 16) +
-    facet_grid(~Site, labeller = labeller(Site = c("ML" = "Grassland"))))
+    facet_grid(~Site, labeller = labeller(Site = c("ML" = "Grassland"))) +
+    theme(panel.grid.major = element_line(color = "gray93"),
+    panel.grid.minor = element_line(color = "gray93")))
 
 (plot_pH_ml_tech.2 <- plot_pH_ml_tech +
     geom_line(data=tibble(x=c(1,3), y = c(1873,1873)), aes (x=x, y=y), inherit.aes = FALSE) +
@@ -239,13 +255,15 @@ summary(bb.tech.aov) #not significant
     scale_fill_manual(values = set_pH) +
     scale_x_discrete(labels=c("4" = "4.5", "5" = "5.5","6" = "6.5", "8" = "7.5")) +
     labs(x= '', y= '', fill= 'pH') + theme_linedraw(base_size = 16) +
-    facet_grid(~Site, labeller = labeller(Site = c("BB" = "Wetland"))))
+    facet_grid(~Site, labeller = labeller(Site = c("BB" = "Wetland"))) +
+    theme(panel.grid.major = element_line(color = "gray93"),
+    panel.grid.minor = element_line(color = "gray93")))
 ```
 
 
 ```{r}
 (all <- plot_grid(plot_pH_ml, plot_pH_an, plot_pH_bb.2, plot_rep_ml.2, plot_rep_an, plot_rep_bb.2, plot_pH_ml_tech.2, plot_pH_an_tech, plot_pH_bb_tech, ncol = 3, labels = c("A", "", "", "B", "", "", "C"), rel_widths = c(1,1,1.1,1,1,1.1,1,1,1.1)))
 
-ggsave('Richness_allsoils_rarefied.png', all, dpi = 300, height = 10, width = 10)
+ggsave('../Figures/SuppFig3_Richness_allsoils_rarefied.pdf', all, dpi = 300, height = 10, width = 10, device = 'pdf')
 ```
 

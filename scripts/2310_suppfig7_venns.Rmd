@@ -295,6 +295,6 @@ legends <- plot_grid(legend1, NULL, legend2, ncol = 3, rel_widths = c(1,-.7,1))
 
 (vens.legs <- plot_grid(vens, NULL, legends, NULL, ncol = 1, rel_heights = c(1, -.07, .2, -.05)) + theme(plot.background = element_rect(fill = "white", color = 'white')))
 
-ggsave('SuppFig_Venns_pH_All.png', vens.legs, dpi = 300, width = 13, height = 11)
+ggsave('../Figures/SuppFig7__Venns_pH_All.pdf', vens.legs, dpi = 300, width = 13, height = 11, device = 'pdf')
 ```
 
