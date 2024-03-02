@@ -9,6 +9,7 @@ output: html_document
 library(tidyverse)
 library(broom)
 library(seqinr)
+library(pairwiseAdonis)
 ```
 
 ---------------------------
@@ -282,7 +283,7 @@ combined4plots$Site <- factor(combined4plots$Site, levels=c("Forest", "Grassland
   stat_cor(aes(label = paste(..rr.label.., ..p.label.., sep = "*`,`~")),
            label.y = 0.06, label.x = 0, size = 2.5) +
   geom_point(col = 'black', pch = 21, show.legend = FALSE) + scale_y_continuous(expand=expansion(mult=c(0.05,0.15))) +
-  scale_fill_manual(values = c('darkslateblue', 'burlywood1', 'cornflowerblue')) + theme_linedraw() + facet_wrap(~Site, scales = "free_y") + labs(y = 'Viral surface protein compositional dissimilarity \n(Bray-Curtis)', x = 'Distance between buffer pHs') + 
+  scale_fill_manual(values = c( 'burlywood1', 'cornflowerblue', 'darkslateblue')) + theme_linedraw() + facet_wrap(~Site, scales = "free_y") + labs(y = 'Viral surface protein compositional dissimilarity \n(Bray-Curtis)', x = 'Distance between buffer pHs') + 
     theme(axis.title.x = element_text(face ="bold"),
     axis.title.y = element_text(face = "bold"),panel.grid.major = element_line(color = "gray93"),
     panel.grid.minor = element_line(color = "gray93")))
@@ -332,72 +333,17 @@ dist.stats.b
 combined.stats <- rbind(dist.stats.m, dist.stats.a, dist.stats.b)
 ```
 
---------------------------------
-3. Panel C : Isoelectric Points 
---------------------------------
-
-```{r}
-#IEP function
-
-add_pI_column <- function(df) {
-  # Apply the s2c function to convert values in Column2 to vectors
-  df$sequences <- sapply(df$seq_aa, s2c)
-  
-  # Calculate isoelectric points using computePI
-  df$pI <- sapply(df$sequences, computePI)
-  
-  return(df)
-}
-```
 
 
 ```{r}
-df <- read.table('../data/2309.paladin.surfaceproteinsfinal.mean.tsv',sep = "\t", header=T) %>% 
-  column_to_rownames(var='Contig') %>% 
-  select(starts_with('ML')) %>% 
-  filter(rowSums(. != 0) > 0) %>% 
-  rownames_to_column(var='protein_id')
-
-squn <- read_csv('../data/2309_surfaceproteins_vcontactdatabase_AAsequences.csv')
-
-df <- df  %>% left_join(squn, by ="protein_id")
-df <- add_pI_column(df)
-df <- df %>% column_to_rownames(var = 'protein_id') 
-
-
-df2 <- df %>% select(-seq_name,-seq_aa, -virus, -sequences, -protein_name) #select samples and pI
-df2 <- df2 %>% mutate(across(-c(pI), ~ifelse(. > 0, pI, .))) %>% select (-pI) #add the pI to every sample that had that protein in it
-
-df3 <- as.data.frame(t(df2)) %>% rownames_to_column(var = 'SampleID')
-
-df.tidy <- df3 %>%  pivot_longer(cols = -SampleID, names_to = "ProteinID", values_to = "IEP") %>% filter(IEP>0)
-df.tidy$pH <- substr(df.tidy$SampleID, 8, 8)
-
-
-(plot1 <-  ggplot(df.tidy, aes(x=IEP, fill = pH)) + geom_density(alpha=0.7) + theme_linedraw() + 
-  labs(x = 'Bioinformatically Calculated Isoelectric Point', y = 'Density') + 
-  facet_wrap(~pH, ncol=1, labeller = labeller(pH = c("4" = "4.5","5" = "5.5", "6" = "6.5", "8" = "7.5"))) + xlim(2.5, 12.5) + 
-  scale_fill_manual(values = c('goldenrod1','darkolivegreen3','chartreuse4', 'darkcyan'), labels = c("4.5", "5.5", "6.5", "7.5") ) + 
-    theme( panel.grid.major = element_line(color = "gray93"),
-    panel.grid.minor = element_line(color = "gray93"), legend.position = 'bottom', legend.title = element_text(face = 'bold', size = 8), legend.text = element_text(size = 8), axis.title.x = element_text(face ="bold"),
-    axis.title.y = element_text(face = "bold")))
-
-```
-
-```{r}
-legend <- get_legend(plot1)
-plot11 <- plot1 + theme(legend.position = 'none')
-
 pcoa.all.22 <- pcoa.all + theme(legend.position = 'bottom', legend.title = element_text(face = 'bold'))
 legend2 <- get_legend(pcoa.all.22)
 pcoa.all.2 <- pcoa.all + theme(legend.position = 'none')
 
-(legends33 <- plot_grid(legend2, legend, ncol = 1, rel_widths = c(1,1)))
+(lerft <- plot_grid(pcoa.all.2, legend2, ncol = 1, rel_heights = c(2, 0.4)))
+(finalplot <- plot_grid(lerft, bc.plots, ncol = 2, labels = c('A','B'), rel_widths = c(1.1,1.6)) + theme(plot.background = element_rect(fill = "white", color = 'white')))
 
-(lerft <- plot_grid(pcoa.all.2, legends33, ncol = 1, rel_heights = c(2, 0.4)))
-(finalplot <- plot_grid(lerft, bc.plots, plot11, ncol = 3, labels = c('A','B','C'), rel_widths = c(1.1,1.6,1.5)) + theme(plot.background = element_rect(fill = "white", color = 'white')))
-
-ggsave('../Figures/Figure3_Protein_BetaDiversity_Iso.pdf', finalplot, width = 14, height = 5, dpi = 400, device = 'pdf')
+ggsave('../Figures/Figure3_Protein_BetaDiversity_Iso.pdf', finalplot, width = 12, height = 6, dpi = 400, device = 'pdf')
 ```
 
 
